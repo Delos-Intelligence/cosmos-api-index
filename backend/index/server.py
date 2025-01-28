@@ -16,6 +16,7 @@ def create_app() -> FastAPI:
     # CORS settings
     origins = [
         "http://localhost",
+        "http://0.0.0.0",
         "http://localhost:3000",
         "http://localhost:3001",
         f"http://localhost:{settings.BACKEND_PORT}",
