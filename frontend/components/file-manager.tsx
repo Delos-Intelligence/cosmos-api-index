@@ -40,7 +40,11 @@ interface FileManagerProps {
     };
   };
 }
-
+interface FileInfo {
+  name: string;
+  size?: number;
+  hash?: string;
+}
 export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
   const [indexes, setIndexes] = useState<Index[]>(
     initialData.data.indices.map((backendIndex) => ({
@@ -72,16 +76,28 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
         throw new Error("Failed to fetch index details");
       }
       const data = await response.json();
+      console.log("Index details response:", data); // Debug log
 
-      setIndexes(
-        indexes.map((index) =>
+      // Handle both array of strings and array of objects for files
+      let processedFiles: FileInfo[] = [];
+      if (data.data?.files) {
+        processedFiles = data.data.files.map((file: string | FileInfo) => {
+          if (typeof file === "string") {
+            return { name: file };
+          }
+          return file;
+        });
+      }
+
+      setIndexes((prevIndexes) =>
+        prevIndexes.map((index) =>
           index.id === indexId
             ? {
                 ...index,
-                files: data.files || [],
-                storage: data.storage,
-                status: data.status,
-                vectorized: data.vectorized,
+                files: processedFiles,
+                storage: data.data?.storage || index.storage,
+                status: data.data?.status || index.status,
+                vectorized: data.data?.vectorized ?? index.vectorized,
               }
             : index
         )
@@ -169,9 +185,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
 
     const uploadedFiles = Array.from(event.target.files);
     const formData = new FormData();
-    formData.append("name", getCurrentIndex()?.name || "");
+    formData.append("index_uuid", currentIndex);
     uploadedFiles.forEach((file) => {
-      formData.append("filesobjects", file);
+      formData.append("filepaths", file.name);
     });
 
     setIsUploading(true);
@@ -182,7 +198,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
         `${config.backendUrl}/files/index/add_files`,
         {
           method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            index_uuid: currentIndex,
+            filepaths: uploadedFiles.map((file) => file.name),
+          }),
         }
       );
 
@@ -191,6 +213,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
         throw new Error(errorData.detail || "Failed to upload files");
       }
 
+      // Refresh the index details after upload
       await fetchIndexDetails(currentIndex);
     } catch (err) {
       console.error("Error uploading files:", err);
@@ -207,26 +230,36 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
       const fileToDelete = getCurrentIndex()?.files[fileIndex];
       if (!fileToDelete) return;
 
+      const fileHash = fileToDelete.file_hash;
+      if (!fileHash) return;
+
+      // Create plain array with single hash string
+      const requestBody = [fileHash.toString()];
+      console.log("Final request body:", JSON.stringify(requestBody));
+
       const response = await fetch(
-        `${config.backendUrl}/files/index/delete_files`,
+        `${config.backendUrl}/files/index/delete_files?index_uuid=${currentIndex}`,
         {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            index_uuid: currentIndex,
-            files_hashes: [fileToDelete.name],
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(requestBody),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to delete file");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error?.error_message || "Failed to delete file"
+        );
       }
 
       await fetchIndexDetails(currentIndex);
     } catch (err) {
       console.error("Error deleting file:", err);
-      setError("Failed to delete file. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to delete file");
     }
   };
 
@@ -397,6 +430,8 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
       setError("Failed to rename index. Please try again.");
     }
   };
+
+  console.log(indexes, "indexes");
 
   return (
     <div className="grid grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
@@ -573,7 +608,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-medium truncate">
-                          {file.name}
+                          {file.filename}
                         </span>
                         {file.size && (
                           <span className="text-sm text-gray-500 dark:text-gray-400">

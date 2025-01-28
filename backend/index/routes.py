@@ -120,9 +120,12 @@ async def add_files_to_index(
 async def delete_files_from_index(
     index_uuid: str, files_hashes: list[str], client: CosmosClient = Depends(get_client)
 ) -> dict[str, Any] | None:
+    print(f"Received parameters: index_uuid={index_uuid}, files_hashes={files_hashes} type {type(files_hashes)}")
     try:
         print(f"Received parameters: index_uuid={index_uuid}, files_hashes={files_hashes}")
-        return client.files_index_delete_files_request(index_uuid=index_uuid, files_hashes=files_hashes)
+        response = client.files_index_delete_files_request(index_uuid=index_uuid, files_hashes=files_hashes)
+        print(f"Response: {response}")
+        return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
