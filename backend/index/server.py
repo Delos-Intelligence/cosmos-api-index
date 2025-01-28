@@ -16,6 +16,7 @@ def create_app() -> FastAPI:
     # CORS settings
     origins = [
         "http://localhost",
+        "http://0.0.0.0",
         "http://localhost:3000",
         "http://localhost:3001",
         f"http://localhost:{settings.BACKEND_PORT}",
@@ -40,7 +41,7 @@ def start() -> None:
     """Start the server."""
     uvicorn.run(
         "index.server:app",
-        # host="localhost",
-        host="0.0.0.0",
+        host="localhost",
+        # host="0.0.0.0",
         port=settings.BACKEND_PORT,
     )
