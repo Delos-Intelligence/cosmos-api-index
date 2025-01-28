@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"]
     )
     return app
 
@@ -40,7 +41,6 @@ def start() -> None:
     """Start the server."""
     uvicorn.run(
         "index.server:app",
-        # host="localhost",
         host="0.0.0.0",
         port=settings.BACKEND_PORT,
     )
