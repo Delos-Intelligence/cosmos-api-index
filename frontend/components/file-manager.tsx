@@ -1,298 +1,96 @@
 "use client";
 
-// components/file-manager.tsx
-
+import React, { useState, ChangeEvent } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Link,
   MessageSquare,
   Pencil,
   Plus,
+  RotateCw,
   Send,
+  Settings,
   Trash2,
   Upload,
-  X,
+  InfoIcon,
 } from "lucide-react";
-import React, { ChangeEvent, useEffect, useState } from "react";
-import config from "../config";
+import config from "@/config";
+import { BackendIndex, Index, Message } from "@/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import IndexCreator from "./index-creator";
 
-interface FileItem {
-  file: File;
-  name: string;
-  size: number;
-  type: string;
-}
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
-interface StorageInfo {
-  size_bytes: number;
-  size_mb: number;
-  num_files: number;
-}
-interface BackendIndex {
-  index_uuid: string;
-  name: string;
-  status: string;
-  vectorized: boolean;
-  created_at: string;
-  updated_at: string;
-  expires_at: string | null;
-  storage: StorageInfo;
-}
-
-interface Index {
-  id: string;
-  name: string;
-  files: FileItem[];
-  messages: Message[];
-  isLoading?: boolean;
-}
-
-const ChatDialog: React.FC<{
-  index: Index;
-  isOpen: boolean;
-  onClose: () => void;
-  onSendMessage: (indexId: string, message: string) => void;
-}> = ({ index, isOpen, onClose, onSendMessage }) => {
-  const [inputMessage, setInputMessage] = useState("");
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-    onSendMessage(index.id, inputMessage);
-    setInputMessage("");
+interface FileManagerProps {
+  initialData: {
+    data: {
+      indices: BackendIndex[];
+    };
   };
+}
 
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl h-[600px] flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Chat with {index.name}</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-
-        <CardContent className="flex-1 overflow-hidden">
-          <ScrollArea className="h-[400px] pr-4">
-            {index.messages.map((message, idx) => (
-              <div
-                key={idx}
-                className={`mb-4 ${
-                  message.role === "user" ? "ml-auto" : "mr-auto"
-                } max-w-[80%]`}
-              >
-                <div
-                  className={`p-3 rounded-lg ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground ml-auto"
-                      : "bg-muted"
-                  }`}
-                >
-                  {message.content}
-                </div>
-              </div>
-            ))}
-            {index.isLoading && (
-              <div className="flex items-center justify-center p-4 text-muted-foreground">
-                Thinking...
-              </div>
-            )}
-          </ScrollArea>
-        </CardContent>
-
-        <div className="border-t p-4">
-          <div className="flex w-full gap-2">
-            <Input
-              placeholder="Ask a question..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            />
-            <Button onClick={handleSendMessage} disabled={index.isLoading}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </Card>
-    </div>
+export const FileManager: React.FC<FileManagerProps> = ({ initialData }) => {
+  const [indexes, setIndexes] = useState<Index[]>(
+    initialData.data.indices.map((backendIndex) => ({
+      id: backendIndex.index_uuid,
+      name: backendIndex.name,
+      files: [],
+      messages: [],
+      vectorized: backendIndex.vectorized,
+      status: backendIndex.status,
+      storage: backendIndex.storage,
+    }))
   );
-};
-
-const IndexCreator: React.FC<{
-  onCreated: (newIndex: Index) => void;
-  onCancel: () => void;
-}> = ({ onCreated, onCancel }) => {
-  const [indexData, setIndexData] = useState({
-    name: "",
-    files: [] as FileItem[],
-    isSaving: false,
-    error: "",
-  });
-
-  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files) return;
-
-    const selectedFiles = Array.from(event.target.files).map((file) => ({
-      file: file,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-    }));
-
-    setIndexData((prev) => ({
-      ...prev,
-      files: [...prev.files, ...selectedFiles],
-    }));
-  };
-
-  const handleRemoveFile = (fileIndex: number) => {
-    setIndexData((prev) => ({
-      ...prev,
-      files: prev.files.filter((_, idx) => idx !== fileIndex),
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!indexData.name.trim()) {
-      setIndexData((prev) => ({
-        ...prev,
-        error: "Please provide an index name",
-      }));
-      return;
-    }
-
-    if (indexData.files.length === 0) {
-      setIndexData((prev) => ({
-        ...prev,
-        error: "Please select at least one file",
-      }));
-      return;
-    }
-
-    setIndexData((prev) => ({ ...prev, isSaving: true, error: "" }));
-
-    try {
-      const formData = new FormData();
-      formData.append("name", indexData.name);
-      indexData.files.forEach((fileItem) => {
-        formData.append("filesobjects", fileItem.file);
-      });
-
-      const response = await fetch(`${config.backendUrl}/files/index/create`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to create index");
-      }
-
-      const newIndex = await response.json();
-      onCreated(newIndex);
-    } catch (err) {
-      setIndexData((prev) => ({
-        ...prev,
-        error: err instanceof Error ? err.message : "Failed to create index",
-      }));
-    } finally {
-      setIndexData((prev) => ({ ...prev, isSaving: false }));
-    }
-  };
-
-  return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Create New Index</CardTitle>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Input
-            placeholder="Index Name"
-            value={indexData.name}
-            onChange={(e) =>
-              setIndexData((prev) => ({ ...prev, name: e.target.value }))
-            }
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Button
-            variant="outline"
-            onClick={() => document.getElementById("fileUpload")?.click()}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Add Files
-          </Button>
-          <input
-            id="fileUpload"
-            type="file"
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-        </div>
-
-        {indexData.files.length > 0 && (
-          <div className="space-y-2">
-            {indexData.files.map((file, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2 border rounded"
-              >
-                <span className="truncate">{file.name}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemoveFile(idx)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {indexData.error && (
-          <Alert variant="destructive">
-            <AlertDescription>{indexData.error}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={indexData.isSaving}>
-            {indexData.isSaving ? "Creating..." : "Create Index"}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+  const [currentIndex, setCurrentIndex] = useState<string | null>(
+    indexes.length > 0 ? indexes[0].id : null
   );
-};
-
-export const FileManager: React.FC = () => {
-  const [indexes, setIndexes] = useState<Index[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<string | null>(null);
   const [isCreatingIndex, setIsCreatingIndex] = useState(false);
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const [tempIndexName, setTempIndexName] = useState<string>("");
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [inputMessage, setInputMessage] = useState("");
+
+  const fetchIndexDetails = async (indexId: string) => {
+    try {
+      const response = await fetch(
+        `${config.backendUrl}/files/index/details/${indexId}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch index details");
+      }
+      const data = await response.json();
+
+      setIndexes(
+        indexes.map((index) =>
+          index.id === indexId
+            ? {
+                ...index,
+                files: data.files || [],
+                storage: data.storage,
+                status: data.status,
+                vectorized: data.vectorized,
+              }
+            : index
+        )
+      );
+    } catch (err) {
+      console.error("Error fetching index details:", err);
+      setError("Failed to load index details. Please try again.");
+    }
+  };
 
   const fetchIndexes = async () => {
     try {
@@ -302,33 +100,30 @@ export const FileManager: React.FC = () => {
       }
       const responseData = await response.json();
 
-      // Handle the specific response structure from the backend
       if (responseData.data?.indices) {
         const transformedIndexes: Index[] = responseData.data.indices.map(
           (backendIndex: BackendIndex) => ({
             id: backendIndex.index_uuid,
             name: backendIndex.name,
-            files: [], // Initialize empty files array
-            messages: [], // Initialize empty messages array
+            files: [],
+            messages: [],
+            vectorized: backendIndex.vectorized,
+            status: backendIndex.status,
+            storage: backendIndex.storage,
           })
         );
 
         setIndexes(transformedIndexes);
         if (transformedIndexes.length > 0 && !currentIndex) {
           setCurrentIndex(transformedIndexes[0].id);
+          await fetchIndexDetails(transformedIndexes[0].id);
         }
-      } else {
-        throw new Error("Invalid response format");
       }
     } catch (err) {
       setError("Failed to load indexes. Please try again.");
       console.error("Error fetching indexes:", err);
     }
   };
-
-  useEffect(() => {
-    fetchIndexes();
-  }, []);
 
   const getCurrentIndex = () =>
     indexes.find((index) => index.id === currentIndex);
@@ -338,33 +133,46 @@ export const FileManager: React.FC = () => {
   };
 
   const handleIndexCreated = (newIndex: Index) => {
-    // Initialize messages array for new index
-    const indexWithMessages = {
-      ...newIndex,
-      messages: [],
-      files: newIndex.files || [],
-    };
-    setIndexes((prevIndexes) => [...prevIndexes, indexWithMessages]);
+    setIndexes((prevIndexes) => [...prevIndexes, newIndex]);
     setCurrentIndex(newIndex.id);
     setIsCreatingIndex(false);
-    // Refresh the list to ensure consistency
     fetchIndexes();
   };
 
-  const handleSelectIndex = (indexId: string) => {
+  const handleSelectIndex = async (indexId: string) => {
     setCurrentIndex(indexId);
-    setIsChatOpen(true);
+    await fetchIndexDetails(indexId);
+  };
+
+  const handleEmbedIndex = async (indexId: string) => {
+    try {
+      const response = await fetch(
+        `${config.backendUrl}/files/index/embed/${indexId}`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to embed index");
+      }
+
+      await fetchIndexDetails(indexId);
+    } catch (err) {
+      console.error("Error embedding index:", err);
+      setError("Failed to embed index. Please try again.");
+    }
   };
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.length || !currentIndex) return;
 
-    const uploadedFiles = Array.from(event.target.files).map((file) => ({
-      file: file,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-    }));
+    const uploadedFiles = Array.from(event.target.files);
+    const formData = new FormData();
+    formData.append("name", getCurrentIndex()?.name || "");
+    uploadedFiles.forEach((file) => {
+      formData.append("filesobjects", file);
+    });
 
     setIsUploading(true);
     setError("");
@@ -374,11 +182,7 @@ export const FileManager: React.FC = () => {
         `${config.backendUrl}/files/index/add_files`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            index_uuid: currentIndex,
-            filepaths: uploadedFiles.map((f) => f.name),
-          }),
+          body: formData,
         }
       );
 
@@ -387,14 +191,9 @@ export const FileManager: React.FC = () => {
         throw new Error(errorData.detail || "Failed to upload files");
       }
 
-      setIndexes(
-        indexes.map((index) =>
-          index.id === currentIndex
-            ? { ...index, files: [...index.files, ...uploadedFiles] }
-            : index
-        )
-      );
+      await fetchIndexDetails(currentIndex);
     } catch (err) {
+      console.error("Error uploading files:", err);
       setError("Failed to upload files. Please try again.");
     } finally {
       setIsUploading(false);
@@ -408,26 +207,25 @@ export const FileManager: React.FC = () => {
       const fileToDelete = getCurrentIndex()?.files[fileIndex];
       if (!fileToDelete) return;
 
-      await fetch(`${config.backendUrl}/files/index/delete_files`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          index_uuid: currentIndex,
-          files_hashes: [fileToDelete.name],
-        }),
-      });
-
-      setIndexes(
-        indexes.map((index) =>
-          index.id === currentIndex
-            ? {
-                ...index,
-                files: index.files.filter((_, idx) => idx !== fileIndex),
-              }
-            : index
-        )
+      const response = await fetch(
+        `${config.backendUrl}/files/index/delete_files`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            index_uuid: currentIndex,
+            files_hashes: [fileToDelete.name],
+          }),
+        }
       );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete file");
+      }
+
+      await fetchIndexDetails(currentIndex);
     } catch (err) {
+      console.error("Error deleting file:", err);
       setError("Failed to delete file. Please try again.");
     }
   };
@@ -450,82 +248,116 @@ export const FileManager: React.FC = () => {
       setIndexes(indexes.filter((index) => index.id !== currentIndex));
       setCurrentIndex(indexes.length > 1 ? indexes[0].id : null);
     } catch (err) {
+      console.error("Error deleting index:", err);
       setError("Failed to delete index. Please try again.");
     }
   };
 
-  const handleSendMessage = async (indexId: string, message: string) => {
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !currentIndex) return;
+
+    const userMessage: Message = {
+      role: "user",
+      content: inputMessage,
+      timestamp: new Date().toISOString(),
+    };
+
+    const currentIdx = getCurrentIndex();
+    if (!currentIdx) return;
+
+    const existingMessages = [...(currentIdx.messages || [])];
+    existingMessages.push(userMessage);
+
     setIndexes(
-      indexes.map((index) => {
-        if (index.id === indexId) {
-          return {
-            ...index,
-            messages: [...index.messages, { role: "user", content: message }],
-            isLoading: true,
-          };
-        }
-        return index;
-      })
+      indexes.map((index) =>
+        index.id === currentIndex
+          ? {
+              ...index,
+              messages: existingMessages,
+              isLoading: true,
+            }
+          : index
+      )
     );
 
     try {
-      const response = await fetch(`${config.backendUrl}/files/index/ask`, {
+      const url = new URL(`${config.backendUrl}/files/index/ask`);
+      url.searchParams.append("index_uuid", currentIndex);
+      url.searchParams.append("question", inputMessage);
+      url.searchParams.append("output_language", "en");
+      url.searchParams.append("active_files_hashes", "[]");
+
+      const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          index_uuid: indexId,
-          question: message,
-          output_language: "en", // You might want to make this configurable
-          active_files_hashes:
-            getCurrentIndex()?.files.map((f) => f.name) || [],
-        }),
+        body: JSON.stringify([]),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to get response");
+      const data = await response.json();
+      setInputMessage("");
+
+      if (data.status === "success" && data.data?.answer) {
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: data.data.answer,
+          timestamp: new Date().toISOString(),
+        };
+
+        existingMessages.push(assistantMessage);
+      } else {
+        let errorMessage = "An error occurred while processing your request.";
+
+        if (data.error?.details) {
+          errorMessage = data.error.details;
+        } else if (data.error?.error_message) {
+          errorMessage = data.error.error_message;
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+
+        const errorResponse: Message = {
+          role: "assistant",
+          content: errorMessage,
+          timestamp: new Date().toISOString(),
+          isError: true,
+        };
+
+        existingMessages.push(errorResponse);
       }
 
-      const responseData = await response.json();
-
       setIndexes(
-        indexes.map((index) => {
-          if (index.id === indexId) {
-            return {
-              ...index,
-              messages: [
-                ...index.messages,
-                { role: "user", content: message },
-                {
-                  role: "assistant",
-                  content: responseData.answer || responseData.toString(),
-                },
-              ],
-              isLoading: false,
-            };
-          }
-          return index;
-        })
+        indexes.map((index) =>
+          index.id === currentIndex
+            ? {
+                ...index,
+                messages: existingMessages,
+                isLoading: false,
+              }
+            : index
+        )
       );
     } catch (error) {
+      console.error("Error sending message:", error);
+
+      existingMessages.push({
+        role: "assistant",
+        content: "Sorry, there was a network error. Please try again later.",
+        timestamp: new Date().toISOString(),
+        isError: true,
+      });
+
       setIndexes(
-        indexes.map((index) => {
-          if (index.id === indexId) {
-            return {
-              ...index,
-              messages: [
-                ...index.messages,
-                {
-                  role: "assistant",
-                  content: "Sorry, there was an error processing your request.",
-                },
-              ],
-              isLoading: false,
-            };
-          }
-          return index;
-        })
+        indexes.map((index) =>
+          index.id === currentIndex
+            ? {
+                ...index,
+                messages: existingMessages,
+                isLoading: false,
+              }
+            : index
+        )
       );
     }
   };
@@ -542,15 +374,12 @@ export const FileManager: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${config.backendUrl}/files/index/rename`, {
+      const url = new URL(`${config.backendUrl}/files/index/rename`);
+      url.searchParams.append("index_uuid", currentIndex);
+      url.searchParams.append("name", newName.trim());
+
+      const response = await fetch(url.toString(), {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          index_uuid: currentIndex,
-          name: newName.trim(),
-        }),
       });
 
       if (!response.ok) {
@@ -564,161 +393,370 @@ export const FileManager: React.FC = () => {
       );
       setIsRenaming(false);
     } catch (err) {
+      console.error("Error renaming index:", err);
       setError("Failed to rename index. Please try again.");
     }
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Left column for index list */}
-      <div className="w-1/4 p-4 border-r">
-        <div className="flex flex-col gap-2 overflow-y-auto h-[calc(100vh-4rem)] pr-4">
-          {indexes.map((index) => (
-            <Button
-              key={index.id}
-              variant={currentIndex === index.id ? "default" : "outline"}
-              onClick={() => handleSelectIndex(index.id)}
-              className="w-full text-left justify-start hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <span className="text-foreground">{index.name}</span>
-            </Button>
-          ))}
-          <Button
-            variant="outline"
-            onClick={handleCreateIndex}
-            className="w-full text-left justify-start"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="text-foreground">New Index</span>
-          </Button>
-        </div>
+    <div className="grid grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
+      {/* Left sidebar */}
+      <div className="col-span-1">
+        <Card className="h-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold">Indexes</CardTitle>
+              <Button variant="ghost" size="sm" onClick={fetchIndexes}>
+                <RotateCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[calc(100vh-16rem)]">
+              <div className="space-y-2">
+                {indexes.map((index) => (
+                  <div key={index.id} className="group relative">
+                    <Button
+                      variant={currentIndex === index.id ? "default" : "ghost"}
+                      className="w-full justify-between"
+                      onClick={() => handleSelectIndex(index.id)}
+                    >
+                      <span className="truncate">{index.name}</span>
+                      {!index.vectorized && (
+                        <span className="text-xs text-yellow-500 ml-2">
+                          Processing
+                        </span>
+                      )}
+                    </Button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={startRenaming}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleDeleteIndex}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleCreateIndex}
+                className="w-full mt-4"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Index
+              </Button>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Right column for index content */}
-      <div className="w-3/4 p-4 overflow-y-auto">
+      {/* Main content area */}
+      <div className="col-span-3">
         {currentIndex ? (
-          <Card className="w-full max-w-4xl mx-auto">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-4">
-                {isRenaming ? (
-                  <Input
-                    className="max-w-xs"
-                    value={tempIndexName}
-                    onChange={(e) => setTempIndexName(e.target.value)}
-                    onBlur={() => handleRenameIndex(tempIndexName)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleRenameIndex(tempIndexName);
-                      }
-                    }}
-                    autoFocus
-                  />
-                ) : (
-                  <CardTitle>{getCurrentIndex()?.name}</CardTitle>
-                )}
-                <Button variant="ghost" size="icon" onClick={startRenaming}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => document.getElementById("fileUpload")?.click()}
-                  disabled={isUploading}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isUploading ? "Uploading..." : "Upload Files"}
-                </Button>
-                <input
-                  id="fileUpload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-4">
-                {getCurrentIndex()?.files.map((file, idx) => (
-                  <div
-                    key={`file-${file.name}-${idx}`}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+          <div className="space-y-6">
+            {/* Index details card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="flex items-center gap-4">
+                  {isRenaming ? (
+                    <Input
+                      className="max-w-xs"
+                      value={tempIndexName}
+                      onChange={(e) => setTempIndexName(e.target.value)}
+                      onBlur={() => handleRenameIndex(tempIndexName)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleRenameIndex(tempIndexName);
+                        }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CardTitle>{getCurrentIndex()?.name}</CardTitle>
+                      {getCurrentIndex()?.vectorized ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="h-2 w-2 rounded-full bg-green-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Index is fully vectorized</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Index is being processed</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEmbedIndex(currentIndex)}
+                          disabled={getCurrentIndex()?.vectorized}
+                        >
+                          <RotateCw className="h-4 w-4 mr-2" />
+                          Vectorize
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {getCurrentIndex()?.vectorized
+                            ? "Index is already vectorized"
+                            : "Vectorize index for better results"}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      document.getElementById("manager-file-upload")?.click()
+                    }
+                    disabled={isUploading}
                   >
-                    <span className="font-medium">{file.name}</span>
-                    <div className="flex gap-2">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {isUploading ? "Uploading..." : "Upload Files"}
+                  </Button>
+                  <input
+                    id="manager-file-upload"
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {error && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-4">
+                  {getCurrentIndex()?.files.map((file, idx) => (
+                    <div
+                      key={`file-${file.name}-${idx}`}
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium truncate">
+                          {file.name}
+                        </span>
+                        {file.size && (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        )}
+                      </div>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        onClick={() => setIsChatOpen(true)}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Link className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => handleDeleteFile(idx)}
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {getCurrentIndex()?.files.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No files uploaded yet. Click the upload button to add files.
+                  {getCurrentIndex()?.files.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <Upload className="h-12 w-12 mb-4 opacity-50" />
+                      <p>No files uploaded yet</p>
+                      <p className="text-sm">
+                        Click the upload button to add files to this index
+                      </p>
+                    </div>
+                  )}
+
+                  {getCurrentIndex()?.storage && (
+                    <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <h3 className="text-sm font-medium mb-2">
+                        Storage Information
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Size
+                          </p>
+                          <p className="font-medium">
+                            {getCurrentIndex()?.storage?.size_mb.toFixed(2)} MB
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Files
+                          </p>
+                          <p className="font-medium">
+                            {getCurrentIndex()?.storage?.num_files} files
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Status
+                          </p>
+                          <p className="font-medium capitalize">
+                            {getCurrentIndex()?.status}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Chat card */}
+            <Card className="h-[calc(100vh-26rem)]">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    <CardTitle>Chat with Index</CardTitle>
                   </div>
-                )}
-                {getCurrentIndex() && getCurrentIndex()!.files.length > 0 && (
-                  <div className="flex justify-end mt-4 gap-2">
+                  {!getCurrentIndex()?.vectorized && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 text-yellow-500">
+                            <InfoIcon className="h-4 w-4" />
+                            <span className="text-sm">
+                              Not fully vectorized
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Some questions may not be answered accurately until
+                            vectorization is complete
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="h-full flex flex-col">
+                <ScrollArea className="flex-1 pr-4">
+                  <div className="space-y-4">
+                    {getCurrentIndex()?.messages?.map((message, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex ${
+                          message.role === "user"
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[80%] p-3 rounded-lg ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : message.isError
+                                ? "bg-destructive/10 text-destructive dark:bg-destructive/20"
+                                : "bg-muted"
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {getCurrentIndex()?.isLoading && (
+                      <div className="flex items-center justify-center p-4 text-muted-foreground">
+                        <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+                <div className="mt-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ask a question..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleSendMessage()
+                      }
+                      className="flex-1"
+                    />
                     <Button
-                      variant="secondary"
-                      onClick={() => setIsChatOpen(true)}
+                      onClick={handleSendMessage}
+                      disabled={getCurrentIndex()?.isLoading}
                     >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Ask Index
-                    </Button>
-                    <Button variant="destructive" onClick={handleDeleteIndex}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Index
+                      <Send className="h-4 w-4" />
                     </Button>
                   </div>
-                )}
-              </div>
+                  {!getCurrentIndex()?.vectorized && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Note: For best results, consider vectorizing your index
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card className="h-full flex items-center justify-center">
+            <CardContent className="text-center">
+              <Plus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">No index selected</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Create a new index or select an existing one to get started
+              </p>
+              <Button onClick={handleCreateIndex}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Index
+              </Button>
             </CardContent>
           </Card>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            Click "New Index" to create your first index
-          </div>
         )}
       </div>
 
-      {currentIndex && getCurrentIndex() && (
-        <ChatDialog
-          index={getCurrentIndex()!}
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          onSendMessage={handleSendMessage}
-        />
-      )}
-
+      {/* Modal for creating new index */}
       {isCreatingIndex && (
-        <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-          <IndexCreator
-            onCreated={handleIndexCreated}
-            onCancel={() => setIsCreatingIndex(false)}
-          />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <IndexCreator
+              onCreated={handleIndexCreated}
+              onCancel={() => setIsCreatingIndex(false)}
+            />
+          </div>
         </div>
       )}
     </div>
