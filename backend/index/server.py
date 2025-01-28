@@ -14,7 +14,14 @@ def create_app() -> FastAPI:
     app.include_router(router)
 
     # CORS settings
-    origins = ["http://localhost", "http://localhost:3000", "http://localhost:8000"]
+    origins = [
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        f"http://localhost:{settings.BACKEND_PORT}",
+        f"{settings.API_SERVER}",
+    ]
+    print(f"Allowed origins {origins}")
 
     app.add_middleware(
         CORSMiddleware,

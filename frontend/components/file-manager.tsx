@@ -18,8 +18,10 @@ import {
   X,
 } from "lucide-react";
 import React, { ChangeEvent, useEffect, useState } from "react";
+import config from "../config";
 
 interface FileItem {
+  file: File;
   name: string;
   size: number;
   type: string;
@@ -28,6 +30,21 @@ interface FileItem {
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+interface StorageInfo {
+  size_bytes: number;
+  size_mb: number;
+  num_files: number;
+}
+interface BackendIndex {
+  index_uuid: string;
+  name: string;
+  status: string;
+  vectorized: boolean;
+  created_at: string;
+  updated_at: string;
+  expires_at: string | null;
+  storage: StorageInfo;
 }
 
 interface Index {
@@ -55,7 +72,7 @@ const ChatDialog: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl h-[600px] flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Chat with {index.name}</CardTitle>
@@ -98,7 +115,7 @@ const ChatDialog: React.FC<{
               placeholder="Ask a question..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             />
             <Button onClick={handleSendMessage} disabled={index.isLoading}>
               <Send className="h-4 w-4" />
@@ -125,6 +142,7 @@ const IndexCreator: React.FC<{
     if (!event.target.files) return;
 
     const selectedFiles = Array.from(event.target.files).map((file) => ({
+      file: file,
       name: file.name,
       size: file.size,
       type: file.type,
@@ -152,18 +170,26 @@ const IndexCreator: React.FC<{
       return;
     }
 
+    if (indexData.files.length === 0) {
+      setIndexData((prev) => ({
+        ...prev,
+        error: "Please select at least one file",
+      }));
+      return;
+    }
+
     setIndexData((prev) => ({ ...prev, isSaving: true, error: "" }));
 
     try {
-      const response = await fetch("http://localhost:8000/files/index/create", {
+      const formData = new FormData();
+      formData.append("name", indexData.name);
+      indexData.files.forEach((fileItem) => {
+        formData.append("filesobjects", fileItem.file);
+      });
+
+      const response = await fetch(`${config.backendUrl}/files/index/create`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: indexData.name,
-          filepaths: indexData.files.map((f) => f.name),
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -268,24 +294,39 @@ export const FileManager: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
 
-  useEffect(() => {
-    // Fetch initial indexes from backend
-    const fetchIndexes = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/files/index/list");
-        const data = await response.json();
-
-        // Ensure data is an array before setting state
-        if (Array.isArray(data)) {
-          setIndexes(data);
-        } else {
-          throw new Error("Invalid response format");
-        }
-      } catch (err) {
-        setError("Failed to load indexes. Please try again.");
+  const fetchIndexes = async () => {
+    try {
+      const response = await fetch(`${config.backendUrl}/files/index/list`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch indexes");
       }
-    };
+      const responseData = await response.json();
 
+      // Handle the specific response structure from the backend
+      if (responseData.data?.indices) {
+        const transformedIndexes: Index[] = responseData.data.indices.map(
+          (backendIndex: BackendIndex) => ({
+            id: backendIndex.index_uuid,
+            name: backendIndex.name,
+            files: [], // Initialize empty files array
+            messages: [], // Initialize empty messages array
+          })
+        );
+
+        setIndexes(transformedIndexes);
+        if (transformedIndexes.length > 0 && !currentIndex) {
+          setCurrentIndex(transformedIndexes[0].id);
+        }
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err) {
+      setError("Failed to load indexes. Please try again.");
+      console.error("Error fetching indexes:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchIndexes();
   }, []);
 
@@ -297,15 +338,29 @@ export const FileManager: React.FC = () => {
   };
 
   const handleIndexCreated = (newIndex: Index) => {
-    setIndexes([...indexes, newIndex]);
+    // Initialize messages array for new index
+    const indexWithMessages = {
+      ...newIndex,
+      messages: [],
+      files: newIndex.files || [],
+    };
+    setIndexes((prevIndexes) => [...prevIndexes, indexWithMessages]);
     setCurrentIndex(newIndex.id);
     setIsCreatingIndex(false);
+    // Refresh the list to ensure consistency
+    fetchIndexes();
+  };
+
+  const handleSelectIndex = (indexId: string) => {
+    setCurrentIndex(indexId);
+    setIsChatOpen(true);
   };
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.length || !currentIndex) return;
 
     const uploadedFiles = Array.from(event.target.files).map((file) => ({
+      file: file,
       name: file.name,
       size: file.size,
       type: file.type,
@@ -316,7 +371,7 @@ export const FileManager: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/files/index/add_files`,
+        `${config.backendUrl}/files/index/add_files`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -324,7 +379,7 @@ export const FileManager: React.FC = () => {
             index_uuid: currentIndex,
             filepaths: uploadedFiles.map((f) => f.name),
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -336,8 +391,8 @@ export const FileManager: React.FC = () => {
         indexes.map((index) =>
           index.id === currentIndex
             ? { ...index, files: [...index.files, ...uploadedFiles] }
-            : index,
-        ),
+            : index
+        )
       );
     } catch (err) {
       setError("Failed to upload files. Please try again.");
@@ -353,7 +408,7 @@ export const FileManager: React.FC = () => {
       const fileToDelete = getCurrentIndex()?.files[fileIndex];
       if (!fileToDelete) return;
 
-      await fetch(`http://localhost:8000/files/index/delete_files`, {
+      await fetch(`${config.backendUrl}/files/index/delete_files`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -369,8 +424,8 @@ export const FileManager: React.FC = () => {
                 ...index,
                 files: index.files.filter((_, idx) => idx !== fileIndex),
               }
-            : index,
-        ),
+            : index
+        )
       );
     } catch (err) {
       setError("Failed to delete file. Please try again.");
@@ -382,10 +437,10 @@ export const FileManager: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/files/index/${currentIndex}`,
+        `${config.backendUrl}/files/index/${currentIndex}`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -410,11 +465,11 @@ export const FileManager: React.FC = () => {
           };
         }
         return index;
-      }),
+      })
     );
 
     try {
-      const response = await fetch("http://localhost:8000/files/index/ask", {
+      const response = await fetch(`${config.backendUrl}/files/index/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -451,7 +506,7 @@ export const FileManager: React.FC = () => {
             };
           }
           return index;
-        }),
+        })
       );
     } catch (error) {
       setIndexes(
@@ -470,7 +525,7 @@ export const FileManager: React.FC = () => {
             };
           }
           return index;
-        }),
+        })
       );
     }
   };
@@ -487,7 +542,7 @@ export const FileManager: React.FC = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/files/index/rename", {
+      const response = await fetch(`${config.backendUrl}/files/index/rename`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -504,10 +559,8 @@ export const FileManager: React.FC = () => {
 
       setIndexes(
         indexes.map((index) =>
-          index.id === currentIndex
-            ? { ...index, name: newName.trim() }
-            : index,
-        ),
+          index.id === currentIndex ? { ...index, name: newName.trim() } : index
+        )
       );
       setIsRenaming(false);
     } catch (err) {
@@ -522,12 +575,12 @@ export const FileManager: React.FC = () => {
         <div className="flex flex-col gap-2 overflow-y-auto h-[calc(100vh-4rem)] pr-4">
           {indexes.map((index) => (
             <Button
-              key={index.id} // Use the unique UUID as the key
+              key={index.id}
               variant={currentIndex === index.id ? "default" : "outline"}
-              onClick={() => setCurrentIndex(index.id)}
-              className="w-full text-left justify-start"
+              onClick={() => handleSelectIndex(index.id)}
+              className="w-full text-left justify-start hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              {index.name}
+              <span className="text-foreground">{index.name}</span>
             </Button>
           ))}
           <Button
@@ -536,7 +589,7 @@ export const FileManager: React.FC = () => {
             className="w-full text-left justify-start"
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Index
+            <span className="text-foreground">New Index</span>
           </Button>
         </div>
       </div>
@@ -553,7 +606,7 @@ export const FileManager: React.FC = () => {
                     value={tempIndexName}
                     onChange={(e) => setTempIndexName(e.target.value)}
                     onBlur={() => handleRenameIndex(tempIndexName)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         handleRenameIndex(tempIndexName);
                       }
@@ -593,9 +646,9 @@ export const FileManager: React.FC = () => {
               )}
 
               <div className="space-y-4">
-                {getCurrentIndex()?.files.map((file, index) => (
+                {getCurrentIndex()?.files.map((file, idx) => (
                   <div
-                    key={index}
+                    key={`file-${file.name}-${idx}`}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <span className="font-medium">{file.name}</span>
@@ -613,7 +666,7 @@ export const FileManager: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteFile(index)}
+                        onClick={() => handleDeleteFile(idx)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -661,7 +714,7 @@ export const FileManager: React.FC = () => {
       )}
 
       {isCreatingIndex && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
           <IndexCreator
             onCreated={handleIndexCreated}
             onCancel={() => setIsCreatingIndex(false)}
