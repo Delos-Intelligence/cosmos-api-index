@@ -10,7 +10,7 @@ import {
   listIndexes,
   renameIndex,
 } from "@/app/actions";
-import { ApiResponse, BackendIndex, FileItem } from "@/types";
+import { ApiResponse, BackendIndex, FileItem } from "@/types/types";
 
 export function useDeleteIndex() {
   const queryClient = useQueryClient();

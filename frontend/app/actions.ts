@@ -1,6 +1,11 @@
 "use server";
 
-import { BackendIndex, FileItem, IndexDetailsResponse, Message } from "@/types";
+import {
+  BackendIndex,
+  FileItem,
+  IndexDetailsResponse,
+  Message,
+} from "@/types/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -55,8 +60,6 @@ export async function createIndex(
   formData: FormData
 ): Promise<ApiResponse<BackendIndex>> {
   try {
-    console.log(formData, "formData");
-
     const response = await fetch(`${API_BASE_URL}/files/index/create`, {
       method: "POST",
 

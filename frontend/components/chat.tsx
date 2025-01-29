@@ -9,7 +9,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Message } from "@/types";
+import { Message } from "@/types/types";
 import { useAskQuestion } from "@/hooks/use-queries";
 
 interface ChatProps {
@@ -26,6 +26,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
   const handleAskQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!indexId || !question) return;
+
     setQuestion("");
     const newMessage: Message = { content: question, role: "user" };
     setMessages((prev) => [...prev, newMessage]);
@@ -71,6 +72,11 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
               {message.content}
             </div>
           ))}
+          {askQuestionMutation.isPending && (
+            <div className="flex justify-center  p-3">
+              <div className="text-gray-500">Thinking...</div>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>
@@ -79,8 +85,11 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Ask a question..."
+            disabled={askQuestionMutation.isPending}
           />
-          <Button type="submit">Send</Button>
+          <Button type="submit" disabled={askQuestionMutation.isPending}>
+            Send
+          </Button>
         </form>
       </CardFooter>
     </Card>

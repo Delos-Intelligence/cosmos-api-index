@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAddFiles, useDeleteFiles } from "@/hooks/use-queries";
-import { FileItem } from "@/types";
+import { FileItem } from "@/types/types";
 
 interface FilesProps {
   indexId: string;
