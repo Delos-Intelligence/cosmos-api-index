@@ -1,57 +1,42 @@
-// Types and Interfaces
 export interface FileItem {
-  file: File;
-  name: string;
+  name?: string;
+  filename: string;
+  file_hash: string;
   size: number;
-  type: string;
 }
 
-export interface Index {
-  id: string;
-  name: string;
-  files: FileItem[];
-  messages: Message[];
-  isLoading?: boolean;
-  vectorized?: boolean;
-  storage?: StorageInfo;
-  status?: string;
-}
-
-interface StorageInfo {
+export interface StorageInfo {
   size_bytes: number;
   size_mb: number;
   num_files: number;
 }
 
-export interface Index {
-  id: string;
+export interface IndexDetailsResponse {
   name: string;
   files: FileItem[];
-  messages: Message[];
-  isLoading?: boolean;
-}
-export interface BackendFile {
-  file_hash: string;
-  filename: string;
-  size: number;
+  storage: StorageInfo;
+  status: string;
+  vectorized: boolean;
 }
 
 export interface BackendIndex {
   index_uuid: string;
   name: string;
-  files: BackendFile[];
+  storage: StorageInfo;
   vectorized: boolean;
-  status: string;
-  storage: {
-    size_bytes: number;
-    size_mb: number;
-    num_files: number;
-  };
   created_at: string;
   updated_at: string;
 }
 
+export interface ApiResponse<T> {
+  data: T;
+  status?: string;
+  error?: {
+    error_message?: string;
+    details?: string;
+  };
+}
 export interface Message {
-  content: string;
   role: "user" | "assistant";
+  content: string;
 }

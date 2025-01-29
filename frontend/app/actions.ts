@@ -1,6 +1,6 @@
 "use server";
 
-import { BackendIndex, FileItem, Message } from "@/types";
+import { BackendIndex, FileItem, IndexDetailsResponse, Message } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -36,28 +36,18 @@ export async function listIndexes(): Promise<
   }
 }
 
-export async function getIndexDetails(indexId: string): Promise<
-  ApiResponse<{
-    data: {
-      files: FileItem[];
-      storage: BackendIndex["storage"];
-      status: string;
-      vectorized: boolean;
-    };
-  }>
-> {
+// Corrected getIndexDetails return type
+export async function getIndexDetails(
+  indexId: string
+): Promise<ApiResponse<IndexDetailsResponse>> {
+  // Remove the extra data nesting
   try {
     const response = await fetch(
       `${API_BASE_URL}/files/index/details/${indexId}`,
-      {
-        cache: "no-store",
-      }
+      { cache: "no-store" }
     );
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch index details");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch index details");
     return response.json();
   } catch (error) {
     console.error("Error in getIndexDetails:", error);
@@ -69,13 +59,17 @@ export async function createIndex(
   formData: FormData
 ): Promise<ApiResponse<BackendIndex>> {
   try {
+    console.log(formData, "formData");
+
     const response = await fetch(`${API_BASE_URL}/files/index/create`, {
       method: "POST",
+
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error("Failed to create index");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || "Failed to create index");
     }
 
     return response.json();

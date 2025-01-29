@@ -10,7 +10,7 @@ import {
   listIndexes,
   renameIndex,
 } from "@/app/actions";
-import { BackendFile } from "@/types";
+import { ApiResponse, BackendIndex, FileItem } from "@/types";
 
 export function useDeleteIndex() {
   const queryClient = useQueryClient();
@@ -98,16 +98,14 @@ export const QUERY_KEYS = {
 };
 
 export function useIndexes() {
-  return useQuery({
+  return useQuery<ApiResponse<{ indices: BackendIndex[] }>>({
     queryKey: QUERY_KEYS.indexes,
     queryFn: async () => {
       const response = await listIndexes();
-
-      return response.data;
+      return response; // Ne pas extraire .data ici
     },
   });
 }
-
 export function useIndexDetails(indexId: string | null) {
   return useQuery({
     queryKey: QUERY_KEYS.indexDetails(indexId || ""),
@@ -129,18 +127,12 @@ export function useCreateIndex() {
     },
   });
 }
-
 export function useAddFiles() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      indexId,
-      files,
-    }: {
-      indexId: string;
-      files: BackendFile[];
-    }) => addFilesToIndex(indexId, files),
+    mutationFn: ({ indexId, files }: { indexId: string; files: FileItem[] }) =>
+      addFilesToIndex(indexId, files),
     onSuccess: (_, { indexId }) => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.indexDetails(indexId),

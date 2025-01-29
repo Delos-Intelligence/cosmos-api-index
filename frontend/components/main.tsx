@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,6 +39,7 @@ export default function IndexPage() {
   const [question, setQuestion] = useState("");
   const [activeFiles, setActiveFiles] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [createIndexOpen, setCreateIndexOpen] = useState(false);
 
   const { data: indexesData } = useIndexes();
   const { data: selectedIndexData } = useIndexDetails(selectedIndexId);
@@ -54,26 +55,55 @@ export default function IndexPage() {
   const renameIndexMutation = useRenameIndex();
   const askQuestionMutation = useAskQuestion();
 
-  const handleCreateIndex = async (formData: FormData) => {
-    await createIndexMutation.mutateAsync(formData);
-    setSelectedIndexId(null);
+  const handleCreateIndex = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const fileInput = formData.get("files") as File;
+
+    if (!name || !fileInput) {
+      console.error("Name and file are required");
+      return;
+    }
+
+    const submitData = new FormData();
+    submitData.append("name", name);
+    submitData.append("filesobjects", fileInput);
+
+    try {
+      await createIndexMutation.mutateAsync(submitData);
+      setCreateIndexOpen(false);
+    } catch (error) {
+      console.error("Error creating index:", error);
+    }
   };
 
   const handleRename = async (indexId: string, newName: string) => {
     await renameIndexMutation.mutateAsync({ indexId, newName });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedIndexId) return;
-    const files = Array.from(e.target.files || []);
-    addFilesMutation.mutate({
-      indexId: selectedIndexId,
-      files: files.map((file) => ({
-        filename: file.name,
-        file_hash: file.name,
-        size: file.size,
-      })),
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedIndexId || !e.target.files?.length) return;
+
+    const files = Array.from(e.target.files);
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("filesobjects", file);
     });
+
+    try {
+      await addFilesMutation.mutateAsync({
+        indexId: selectedIndexId,
+        files: files.map((file) => ({
+          filename: file.name,
+          file_hash: file.name,
+          size: file.size,
+        })),
+      });
+    } catch (error) {
+      console.error("Error uploading files:", error);
+    }
   };
 
   const handleAskQuestion = async (e: React.FormEvent) => {
@@ -97,7 +127,6 @@ export default function IndexPage() {
       setMessages((prev) => [...prev, answerMessage]);
     } catch (error) {
       console.error(error);
-
       const errorMessage: Message = {
         content: "Failed to get answer. Please try again.",
         role: "assistant",
@@ -108,12 +137,11 @@ export default function IndexPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
+    <div className="flex h-full bg-gray-50">
       <div className="w-80 border-r bg-white p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Indexes</h2>
-          <Dialog>
+          <Dialog open={createIndexOpen} onOpenChange={setCreateIndexOpen}>
             <DialogTrigger asChild>
               <Button size="sm">New Index</Button>
             </DialogTrigger>
@@ -121,7 +149,7 @@ export default function IndexPage() {
               <DialogHeader>
                 <DialogTitle>Create New Index</DialogTitle>
               </DialogHeader>
-              <form action={handleCreateIndex}>
+              <form onSubmit={handleCreateIndex}>
                 <div className="space-y-4">
                   <Input name="name" placeholder="Index Name" required />
                   <Input
@@ -129,6 +157,7 @@ export default function IndexPage() {
                     type="file"
                     multiple
                     className="cursor-pointer"
+                    required
                   />
                   <Button type="submit" className="w-full">
                     Create
@@ -163,11 +192,9 @@ export default function IndexPage() {
         </ScrollArea>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 p-8">
         {selectedIndex ? (
           <div className="space-y-6">
-            {/* Index Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <h1 className="text-2xl font-bold">{selectedIndex.name}</h1>
@@ -222,7 +249,6 @@ export default function IndexPage() {
               </div>
             </div>
 
-            {/* Files Section */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -235,7 +261,12 @@ export default function IndexPage() {
                       <DialogHeader>
                         <DialogTitle>Upload Files</DialogTitle>
                       </DialogHeader>
-                      <Input type="file" multiple onChange={handleFileUpload} />
+                      <Input
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="cursor-pointer"
+                      />
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -290,7 +321,6 @@ export default function IndexPage() {
               </CardContent>
             </Card>
 
-            {/* Chat Section */}
             <Card className="h-[450px]">
               <CardHeader>
                 <CardTitle>Chat</CardTitle>
