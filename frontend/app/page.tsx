@@ -1,22 +1,31 @@
 // app/page.tsx
 import { Metadata } from "next";
-import { FileManager } from "@/components/file-manager";
-import config from "@/config";
-import CosmosIndexManager from "@/components/main";
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from "@tanstack/react-query";
 import IndexPage from "@/components/main";
+import { listIndexes } from "@/app/actions";
+import { QUERY_KEYS } from "@/hooks/use-queries";
+
 export const metadata: Metadata = {
   title: "Cosmos Index - Document Management",
   description: "Manage and interact with your document indexes",
 };
 
-async function getInitialIndexes() {
-  const response = await fetch(`${config.backendUrl}/files/index/list`);
-  if (!response.ok) throw new Error("Failed to fetch indexes");
-  return response.json();
-}
-
 export default async function Home() {
-  const initialData = await getInitialIndexes();
+  const queryClient = new QueryClient();
 
-  return <IndexPage />;
+  // Prefetch the indexes
+  await queryClient.prefetchQuery({
+    queryKey: QUERY_KEYS.indexes,
+    queryFn: listIndexes,
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <IndexPage />
+    </HydrationBoundary>
+  );
 }

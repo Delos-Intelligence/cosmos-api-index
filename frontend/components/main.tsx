@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +23,7 @@ import {
 import { Message } from "@/types";
 import {
   useIndexes,
+  useIndexDetails,
   useCreateIndex,
   useDeleteIndex,
   useEmbedIndex,
@@ -39,16 +40,12 @@ export default function IndexPage() {
   const [activeFiles, setActiveFiles] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Single data source - no need for separate details query
   const { data: indexesData } = useIndexes();
-  const indexes = indexesData?.indices || [];
+  const { data: selectedIndexData } = useIndexDetails(selectedIndexId);
 
-  // Get the selected index from our existing data
-  const selectedIndex = indexes.find(
-    (index) => index.index_uuid === selectedIndexId
-  );
+  const indexes = indexesData?.data?.indices || [];
+  const selectedIndex = selectedIndexData?.data;
 
-  // Mutations
   const createIndexMutation = useCreateIndex();
   const deleteIndexMutation = useDeleteIndex();
   const embedIndexMutation = useEmbedIndex();
@@ -67,9 +64,10 @@ export default function IndexPage() {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedIndexId) return;
     const files = Array.from(e.target.files || []);
     addFilesMutation.mutate({
-      indexId: selectedIndexId!,
+      indexId: selectedIndexId,
       files: files.map((file) => ({
         filename: file.name,
         file_hash: file.name,
@@ -98,9 +96,11 @@ export default function IndexPage() {
       };
       setMessages((prev) => [...prev, answerMessage]);
     } catch (error) {
+      console.error(error);
+
       const errorMessage: Message = {
         content: "Failed to get answer. Please try again.",
-        role: "error",
+        role: "assistant",
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
@@ -150,7 +150,7 @@ export default function IndexPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium">{index.name}</span>
-                <Badge variant={index.vectorized ? "success" : "secondary"}>
+                <Badge variant={index.vectorized ? "default" : "secondary"}>
                   {index.vectorized ? "Ready" : "Processing"}
                 </Badge>
               </div>
@@ -200,13 +200,21 @@ export default function IndexPage() {
               <div className="flex space-x-2">
                 <Button
                   variant="destructive"
-                  onClick={() => deleteIndexMutation.mutate(selectedIndexId!)}
+                  onClick={() => {
+                    if (selectedIndexId) {
+                      deleteIndexMutation.mutate(selectedIndexId);
+                      setSelectedIndexId(null);
+                    }
+                  }}
                 >
                   Delete
                 </Button>
                 {!selectedIndex.vectorized && (
                   <Button
-                    onClick={() => embedIndexMutation.mutate(selectedIndexId!)}
+                    onClick={() =>
+                      selectedIndexId &&
+                      embedIndexMutation.mutate(selectedIndexId)
+                    }
                   >
                     Embed Now
                   </Button>
