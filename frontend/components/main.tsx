@@ -44,7 +44,6 @@ export default function Main() {
     await renameIndexMutation.mutateAsync({ indexId, newName });
   };
 
-  // Close sidebar on mobile after selection
   useEffect(() => {
     if (window.innerWidth < 768 && selectedIndexId) {
       setIsSidebarOpen(false);
@@ -52,8 +51,7 @@ export default function Main() {
   }, [selectedIndexId]);
 
   return (
-    <div className="flex h-screen flex-col md:flex-row">
-      {/* Top Navigation Bar - Mobile Only */}
+    <div className="flex h-full flex-col md:flex-row">
       <div className="border-b bg-white p-4 md:hidden">
         <div className="flex items-center justify-between">
           <Button
@@ -66,17 +64,15 @@ export default function Main() {
           <h1 className="text-lg font-semibold">
             {selectedIndex ? selectedIndex.name : "Indexes"}
           </h1>
-          <div className="w-10" /> {/* Spacer for alignment */}
+          <div className="w-10" />
         </div>
       </div>
 
-      {/* Sidebar */}
       <div
         className={`${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } fixed inset-y-0 left-0 z-30 w-80 transform bg-white transition-transform md:relative md:translate-x-0`}
       >
-        {/* Sidebar Header */}
         <div className="hidden border-b p-4 md:block">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Indexes</h2>
@@ -87,7 +83,6 @@ export default function Main() {
           </div>
         </div>
 
-        {/* Mobile Sidebar Header */}
         <div className="border-b p-4 md:hidden">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Indexes</h2>
@@ -105,7 +100,6 @@ export default function Main() {
           />
         </div>
 
-        {/* Sidebar Content */}
         <ScrollArea className="h-[calc(100vh-8rem)] p-4 md:h-[calc(100vh-5rem)]">
           {indexes.map((index) => (
             <div
@@ -130,12 +124,10 @@ export default function Main() {
         </ScrollArea>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-auto bg-gray-50 md:h-screen">
         <div className="p-4 md:p-8">
           {selectedIndex ? (
             <div className="space-y-6">
-              {/* Desktop Header - Hidden on Mobile */}
               <div className="hidden md:block">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -192,7 +184,6 @@ export default function Main() {
                 </div>
               </div>
 
-              {/* Mobile Actions */}
               <div className="flex justify-end space-x-2 md:hidden">
                 <Button
                   variant="destructive"
