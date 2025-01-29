@@ -4,7 +4,7 @@ import {
   QueryClient,
   dehydrate,
 } from "@tanstack/react-query";
-import IndexPage from "@/components/main";
+import Main from "@/components/main";
 import { listIndexes } from "@/app/actions";
 import { QUERY_KEYS } from "@/hooks/use-queries";
 
@@ -23,7 +23,7 @@ export default async function Home() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <IndexPage />
+      <Main />
     </HydrationBoundary>
   );
 }

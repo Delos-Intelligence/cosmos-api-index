@@ -104,6 +104,7 @@ export function useIndexes() {
       const response = await listIndexes();
       return response;
     },
+    staleTime: 0,
   });
 }
 export function useIndexDetails(indexId: string | null) {

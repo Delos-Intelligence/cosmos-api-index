@@ -22,7 +22,6 @@ export async function listIndexes(): Promise<
       headers: {
         Accept: "application/json",
       },
-      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -41,8 +40,7 @@ export async function getIndexDetails(
 ): Promise<ApiResponse<IndexDetailsResponse>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/files/index/details/${indexId}`,
-      { cache: "no-store" }
+      `${API_BASE_URL}/files/index/details/${indexId}`
     );
 
     if (!response.ok) throw new Error("Failed to fetch index details");
