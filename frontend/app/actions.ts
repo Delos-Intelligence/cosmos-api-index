@@ -120,25 +120,32 @@ export async function embedIndex(
 export async function addFilesToIndex(
   indexId: string,
   files: FileItem[]
-): Promise<
-  ApiResponse<{
-    files: FileItem[];
-  }>
-> {
+): Promise<ApiResponse<{ files: FileItem[] }>> {
   try {
+    console.log(files, "files action");
+
+    // Create FormData and append files
+    const formData = new FormData();
+    files.forEach((file) => {
+      // You'll need the actual File object here, not just metadata
+      if (file.fileObject) {
+        // Assuming you have the actual file object stored
+        formData.append("filesobjects", file.fileObject);
+      }
+    });
+
     const response = await fetch(
       `${API_BASE_URL}/files/index/add_files?index_uuid=${indexId}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(files.map((f) => f.name)),
+        // Remove Content-Type header - browser will set it automatically with boundary
+        body: formData,
       }
     );
 
     if (!response.ok) {
-      throw new Error("Failed to add files");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to add files: ${JSON.stringify(errorData)}`);
     }
 
     return response.json();
@@ -147,7 +154,6 @@ export async function addFilesToIndex(
     throw error;
   }
 }
-
 export async function deleteFilesFromIndex(
   indexId: string,
   fileHashes: string[]

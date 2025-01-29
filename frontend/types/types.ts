@@ -1,8 +1,8 @@
 export interface FileItem {
-  name?: string;
   filename: string;
   file_hash: string;
   size: number;
+  fileObject?: File; // The actual File object from the input
 }
 
 export interface StorageInfo {

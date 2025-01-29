@@ -32,19 +32,16 @@ export default function Files({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
 
-    const files = Array.from(e.target.files);
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("filesobjects", file);
-    });
+    const selectedFiles = Array.from(e.target.files);
 
     try {
       await addFilesMutation.mutateAsync({
         indexId,
-        files: files.map((file) => ({
+        files: selectedFiles.map((file) => ({
           filename: file.name,
           file_hash: file.name,
           size: file.size,
+          fileObject: file, // Add this line to include the actual File object
         })),
       });
     } catch (error) {

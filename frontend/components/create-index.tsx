@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCreateIndex } from "@/hooks/use-queries";
+import { Loader2 } from "lucide-react";
 
 interface CreateIndexProps {
   isOpen: boolean;
@@ -56,16 +57,33 @@ export default function CreateIndex({
         </DialogHeader>
         <form onSubmit={handleCreateIndex}>
           <div className="space-y-4">
-            <Input name="name" placeholder="Index Name" required />
+            <Input
+              name="name"
+              placeholder="Index Name"
+              required
+              disabled={createIndexMutation.isPending}
+            />
             <Input
               name="files"
               type="file"
               multiple
               className="cursor-pointer"
               required
+              disabled={createIndexMutation.isPending}
             />
-            <Button type="submit" className="w-full">
-              Create
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={createIndexMutation.isPending}
+            >
+              {createIndexMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create"
+              )}
             </Button>
           </div>
         </form>

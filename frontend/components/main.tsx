@@ -10,8 +10,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Menu, PencilIcon, X } from "lucide-react";
+import { Menu, PencilIcon, X, Loader2 } from "lucide-react";
 import Chat from "@/components/chat";
 import CreateIndex from "@/components/create-index";
 import Files from "@/components/files";
@@ -29,6 +31,7 @@ export default function Main() {
   const [activeFiles, setActiveFiles] = useState<string[]>([]);
   const [createIndexOpen, setCreateIndexOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: indexesData } = useIndexes();
   const { data: selectedIndexData } = useIndexDetails(selectedIndexId);
@@ -44,11 +47,56 @@ export default function Main() {
     await renameIndexMutation.mutateAsync({ indexId, newName });
   };
 
+  const handleDelete = async () => {
+    if (selectedIndexId) {
+      await deleteIndexMutation.mutateAsync(selectedIndexId);
+      setDeleteDialogOpen(false);
+      setSelectedIndexId(null);
+    }
+  };
+
   useEffect(() => {
     if (window.innerWidth < 768 && selectedIndexId) {
       setIsSidebarOpen(false);
     }
   }, [selectedIndexId]);
+
+  const DeleteDialog = () => (
+    <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Index</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete &rdquo;{selectedIndex?.name}&rdquo;?
+            This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={deleteIndexMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteIndexMutation.isPending}
+          >
+            {deleteIndexMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <div className="flex h-full flex-col md:flex-row">
@@ -146,13 +194,22 @@ export default function Main() {
                           <Input
                             defaultValue={selectedIndex.name}
                             onChange={(e) => setNewIndexName(e.target.value)}
+                            disabled={renameIndexMutation.isPending}
                           />
                           <Button
                             onClick={() =>
                               handleRename(selectedIndexId!, newIndexName)
                             }
+                            disabled={renameIndexMutation.isPending}
                           >
-                            Save Changes
+                            {renameIndexMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              "Save Changes"
+                            )}
                           </Button>
                         </div>
                       </DialogContent>
@@ -161,12 +218,7 @@ export default function Main() {
                   <div className="flex space-x-2">
                     <Button
                       variant="destructive"
-                      onClick={() => {
-                        if (selectedIndexId) {
-                          deleteIndexMutation.mutate(selectedIndexId);
-                          setSelectedIndexId(null);
-                        }
-                      }}
+                      onClick={() => setDeleteDialogOpen(true)}
                     >
                       Delete
                     </Button>
@@ -176,8 +228,16 @@ export default function Main() {
                           selectedIndexId &&
                           embedIndexMutation.mutate(selectedIndexId)
                         }
+                        disabled={embedIndexMutation.isPending}
                       >
-                        Embed Now
+                        {embedIndexMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Embedding...
+                          </>
+                        ) : (
+                          "Embed Now"
+                        )}
                       </Button>
                     )}
                   </div>
@@ -188,12 +248,7 @@ export default function Main() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
-                    if (selectedIndexId) {
-                      deleteIndexMutation.mutate(selectedIndexId);
-                      setSelectedIndexId(null);
-                    }
-                  }}
+                  onClick={() => setDeleteDialogOpen(true)}
                 >
                   Delete
                 </Button>
@@ -204,8 +259,16 @@ export default function Main() {
                       selectedIndexId &&
                       embedIndexMutation.mutate(selectedIndexId)
                     }
+                    disabled={embedIndexMutation.isPending}
                   >
-                    Embed Now
+                    {embedIndexMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Embedding...
+                      </>
+                    ) : (
+                      "Embed Now"
+                    )}
                   </Button>
                 )}
               </div>
@@ -229,6 +292,7 @@ export default function Main() {
           )}
         </div>
       </div>
+      <DeleteDialog />
     </div>
   );
 }

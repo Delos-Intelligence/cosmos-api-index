@@ -107,14 +107,21 @@ async def embed_index(index_uuid: str, client: CosmosClient = Depends(get_client
 
 @router.post("/files/index/add_files")
 async def add_files_to_index(
-    index_uuid: str, filepaths: list[str], client: CosmosClient = Depends(get_client)
+    index_uuid: str, filesobjects: list[UploadFile] = Form(...), client: CosmosClient = Depends(get_client)
 ) -> dict[str, Any] | None:
     try:
-        print(f"Received parameters: index_uuid={index_uuid}, filepaths={filepaths}")
-        return client.files_index_add_files_request(index_uuid=index_uuid, filepaths=filepaths)
+        print(f"Received parameters: index_uuid={index_uuid}")
+        print(f"Received files: {[file.filename for file in filesobjects]}")
+
+        # Convert the uploaded files to the format expected by the client
+        files_data = []
+        for file in filesobjects:
+            content = await file.read()
+            files_data.append(("files", (file.filename, io.BytesIO(content))))
+
+        return client.files_index_add_files_request(index_uuid=index_uuid, filesobjects=files_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @router.delete("/files/index/delete_files")
 async def delete_files_from_index(
