@@ -1,36 +1,145 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vector Index Chat
+
+A web application that allows you to create, manage, and interact with vector indexes through a chat interface. Built with Next.js 15 and FastAPI, powered by the Cosmos API.
+
+## Features
+
+- Create and manage vector indexes
+- Upload and delete files from your indexes
+- Generate embeddings using Cosmos API
+- Interactive chat interface for querying your indexed content
+- Modern, responsive UI built with Tailwind CSS and shadcn/ui components
+- Real-time data fetching with TanStack Query
+
+## Tech Stack
+
+### Frontend
+
+- Next.js 15 (App Router)
+- TailwindCSS
+- shadcn/ui components
+- TanStack Query
+- pnpm package manager
+
+### Backend
+
+- FastAPI (Python)
+- Cosmos Client by Delos Intelligence
+- Poetry dependency management
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18 or higher)
+- pnpm
+- Python 3.9+
+- Poetry
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/vector-index-chat.git
+cd vector-index-chat
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install frontend dependencies:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Install backend dependencies:
 
-## Learn More
+```bash
+cd backend
+poetry install
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Create a `.env` file in the root directory:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+COSMOS_API_KEY=your_api_key_here
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Start the development servers:
 
-## Deploy on Vercel
+Frontend:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Backend:
+
+```bash
+poetry run uvicorn app.main:app --reload
+```
+
+## Usage
+
+1. Create a new index:
+
+```bash
+POST /api/indexes
+{
+  "name": "my-index",
+  "description": "Optional description"
+}
+```
+
+2. Upload files to your index:
+
+```bash
+POST /api/indexes/{index_id}/files
+```
+
+3. Generate embeddings:
+
+```bash
+POST /api/indexes/{index_id}/embed
+```
+
+4. Start chatting with your index through the web interface!
+
+## API Documentation
+
+### Indexes
+
+- `GET /api/indexes` - List all indexes
+- `POST /api/indexes` - Create a new index
+- `DELETE /api/indexes/{index_id}` - Delete an index
+
+### Files
+
+- `POST /api/indexes/{index_id}/files` - Upload files to an index
+- `GET /api/indexes/{index_id}/files` - List files in an index
+- `DELETE /api/indexes/{index_id}/files/{file_id}` - Delete a file
+
+### Chat
+
+- `POST /api/chat` - Send a message to chat with your indexed content
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Delos Intelligence](https://delos.com) for the Cosmos API
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components
+- [TanStack Query](https://tanstack.com/query/latest) for efficient data fetching
+
+## Support
+
+If you encounter any issues or have questions, please file an issue on the GitHub repository.
