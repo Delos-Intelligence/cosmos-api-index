@@ -34,7 +34,8 @@ export default function Main() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: indexesData } = useIndexes();
-  const { data: selectedIndexData } = useIndexDetails(selectedIndexId);
+  const { data: selectedIndexData, isPending: isIndexDetailsLoading } =
+    useIndexDetails(selectedIndexId);
 
   const indexes = indexesData?.data?.indices || [];
   const selectedIndex = selectedIndexData?.data;
@@ -174,117 +175,124 @@ export default function Main() {
 
       <div className="flex-1 overflow-auto bg-gray-50 md:h-screen">
         <div className="p-4 md:p-8">
-          {selectedIndex ? (
-            <div className="space-y-6">
-              <div className="hidden md:block">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <h1 className="text-2xl font-bold">{selectedIndex.name}</h1>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <PencilIcon className="h-5 w-5" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Rename Index</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <Input
-                            defaultValue={selectedIndex.name}
-                            onChange={(e) => setNewIndexName(e.target.value)}
-                            disabled={renameIndexMutation.isPending}
-                          />
-                          <Button
-                            onClick={() =>
-                              handleRename(selectedIndexId!, newIndexName)
-                            }
-                            disabled={renameIndexMutation.isPending}
-                          >
-                            {renameIndexMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                              </>
-                            ) : (
-                              "Save Changes"
-                            )}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="destructive"
-                      onClick={() => setDeleteDialogOpen(true)}
-                    >
-                      Delete
-                    </Button>
-                    {!selectedIndex.vectorized && (
-                      <Button
-                        onClick={() =>
-                          selectedIndexId &&
-                          embedIndexMutation.mutate(selectedIndexId)
-                        }
-                        disabled={embedIndexMutation.isPending}
-                      >
-                        {embedIndexMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Embedding...
-                          </>
-                        ) : (
-                          "Embed Now"
-                        )}
-                      </Button>
-                    )}
-                  </div>
+          {selectedIndexId ? (
+            isIndexDetailsLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="flex flex-col items-center space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin " />
+                  <p className="text-gray-500">Loading index details...</p>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="hidden md:block">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <h1 className="text-2xl font-bold">
+                        {selectedIndex?.name}
+                      </h1>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <PencilIcon className="h-5 w-5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Rename Index</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <Input
+                              defaultValue={selectedIndex?.name}
+                              onChange={(e) => setNewIndexName(e.target.value)}
+                              disabled={renameIndexMutation.isPending}
+                            />
+                            <Button
+                              onClick={() =>
+                                handleRename(selectedIndexId, newIndexName)
+                              }
+                              disabled={renameIndexMutation.isPending}
+                            >
+                              {renameIndexMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                "Save Changes"
+                              )}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="destructive"
+                        onClick={() => setDeleteDialogOpen(true)}
+                      >
+                        Delete
+                      </Button>
+                      {!selectedIndex?.vectorized && (
+                        <Button
+                          onClick={() =>
+                            embedIndexMutation.mutate(selectedIndexId)
+                          }
+                          disabled={embedIndexMutation.isPending}
+                        >
+                          {embedIndexMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Embedding...
+                            </>
+                          ) : (
+                            "Embed Now"
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex justify-end space-x-2 md:hidden">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  Delete
-                </Button>
-                {!selectedIndex.vectorized && (
+                <div className="flex justify-end space-x-2 md:hidden">
                   <Button
+                    variant="destructive"
                     size="sm"
-                    onClick={() =>
-                      selectedIndexId &&
-                      embedIndexMutation.mutate(selectedIndexId)
-                    }
-                    disabled={embedIndexMutation.isPending}
+                    onClick={() => setDeleteDialogOpen(true)}
                   >
-                    {embedIndexMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Embedding...
-                      </>
-                    ) : (
-                      "Embed Now"
-                    )}
+                    Delete
                   </Button>
+                  {!selectedIndex?.vectorized && (
+                    <Button
+                      size="sm"
+                      onClick={() => embedIndexMutation.mutate(selectedIndexId)}
+                      disabled={embedIndexMutation.isPending}
+                    >
+                      {embedIndexMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Embedding...
+                        </>
+                      ) : (
+                        "Embed Now"
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                {selectedIndex && (
+                  <>
+                    <Files
+                      indexId={selectedIndexId}
+                      files={selectedIndex.files || []}
+                      activeFiles={activeFiles}
+                      onActiveFilesChange={setActiveFiles}
+                    />
+                    <Chat indexId={selectedIndexId} activeFiles={activeFiles} />
+                  </>
                 )}
               </div>
-
-              {selectedIndexId && (
-                <>
-                  <Files
-                    indexId={selectedIndexId}
-                    files={selectedIndex.files || []}
-                    activeFiles={activeFiles}
-                    onActiveFilesChange={setActiveFiles}
-                  />
-                  <Chat indexId={selectedIndexId} activeFiles={activeFiles} />
-                </>
-              )}
-            </div>
+            )
           ) : (
             <div className="flex h-full items-center justify-center">
               <p className="text-gray-500">Select an index to view details</p>
