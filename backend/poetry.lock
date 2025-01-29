@@ -182,13 +182,13 @@ files = [
 
 [[package]]
 name = "delos-cosmos"
-version = "0.1.20"
+version = "0.1.22"
 description = "Cosmos client."
 optional = false
 python-versions = "<4.0,>=3.11"
 files = [
-    {file = "delos_cosmos-0.1.20-py3-none-any.whl", hash = "sha256:e786cb257ed6cfe4b1774fae4a0c635117da0b5170f271b014e887f5a603db3c"},
-    {file = "delos_cosmos-0.1.20.tar.gz", hash = "sha256:7f67ed712e2903e378d66cf6852781471f901280bbfad10f850f6c72694e1d04"},
+    {file = "delos_cosmos-0.1.22-py3-none-any.whl", hash = "sha256:07a2ed501032884290c8399a61baacb77a0f0aaa8c65347fc06dee0cdfb4ba54"},
+    {file = "delos_cosmos-0.1.22.tar.gz", hash = "sha256:040e8ea584dc1ac6e5b75c5e5ba216e82f94c636752f8efa03d8ac39de768508"},
 ]
 
 [package.dependencies]
@@ -677,4 +677,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "==3.11.7"
-content-hash = "df556899a049e53b7ac9cfc7ec16418f28477087a05d809474e804436c7e8750"
+content-hash = "b4362d1f8686cf2a10bd9566412703d15edc95532f7f647f435d3d4028966a10"
