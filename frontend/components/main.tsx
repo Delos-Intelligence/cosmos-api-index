@@ -109,7 +109,7 @@ export default function IndexPage() {
   const handleAskQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedIndexId || !question) return;
-
+    setQuestion("");
     const newMessage: Message = { content: question, role: "user" };
     setMessages((prev) => [...prev, newMessage]);
 
@@ -133,7 +133,6 @@ export default function IndexPage() {
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
-    setQuestion("");
   };
 
   return (
@@ -180,7 +179,7 @@ export default function IndexPage() {
               <div className="flex items-center justify-between">
                 <span className="font-medium">{index.name}</span>
                 <Badge variant={index.vectorized ? "default" : "secondary"}>
-                  {index.vectorized ? "Ready" : "Processing"}
+                  {index.vectorized ? "Vectorized" : "Unvectorized"}
                 </Badge>
               </div>
               <p className="text-sm text-gray-500">

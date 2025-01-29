@@ -102,7 +102,7 @@ export function useIndexes() {
     queryKey: QUERY_KEYS.indexes,
     queryFn: async () => {
       const response = await listIndexes();
-      return response; // Ne pas extraire .data ici
+      return response;
     },
   });
 }

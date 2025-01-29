@@ -36,11 +36,9 @@ export async function listIndexes(): Promise<
   }
 }
 
-// Corrected getIndexDetails return type
 export async function getIndexDetails(
   indexId: string
 ): Promise<ApiResponse<IndexDetailsResponse>> {
-  // Remove the extra data nesting
   try {
     const response = await fetch(
       `${API_BASE_URL}/files/index/details/${indexId}`,

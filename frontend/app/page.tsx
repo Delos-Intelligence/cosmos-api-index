@@ -1,4 +1,3 @@
-// app/page.tsx
 import { Metadata } from "next";
 import {
   HydrationBoundary,
@@ -17,7 +16,6 @@ export const metadata: Metadata = {
 export default async function Home() {
   const queryClient = new QueryClient();
 
-  // Prefetch the indexes
   await queryClient.prefetchQuery({
     queryKey: QUERY_KEYS.indexes,
     queryFn: listIndexes,
