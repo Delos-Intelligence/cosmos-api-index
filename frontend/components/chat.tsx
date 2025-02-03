@@ -55,6 +55,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
       };
       setMessages((prev) => [...prev, answerMessage]);
     } catch (error) {
+      console.error("Error asking question:", error);
       const errorContent: Message = {
         content: "Something went wrong. Please try again.",
         role: "error",
