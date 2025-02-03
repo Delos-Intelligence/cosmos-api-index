@@ -1,5 +1,5 @@
-import io
-from typing import Any
+from io import BytesIO
+from typing import IO, Any
 
 from cosmos import CosmosClient
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
@@ -60,13 +60,13 @@ async def create_index(
 ) -> dict[str, Any] | None:
     try:
         print(f"Received name: {name}")
-        print(f"Received files: {[file.filename for file in filesobjects]}")
+        print(f"Received files: {[file.filename or '' for file in filesobjects]}")
 
         # Convert the uploaded files to the format expected by the client
-        files_data = []
+        files_data: list[tuple[str, tuple[str, IO[bytes]]]] = []
         for file in filesobjects:
             content = await file.read()
-            files_data.append(("files", (file.filename, io.BytesIO(content))))
+            files_data.append(("files", (file.filename or "", BytesIO(content))))
 
         new_index = client.files_index_create_request(name=name, filesobjects=files_data)
         return new_index
@@ -116,10 +116,10 @@ async def add_files_to_index(
         print(f"Received files: {[file.filename for file in filesobjects]}")
 
         # Convert the uploaded files to the format expected by the client
-        files_data = []
+        files_data: list[tuple[str, tuple[str, IO[bytes]]]] = []
         for file in filesobjects:
             content = await file.read()
-            files_data.append(("files", (file.filename, io.BytesIO(content))))
+            files_data.append(("files", (file.filename or "", BytesIO(content))))
 
         return client.files_index_add_files_request(index_uuid=index_uuid, filesobjects=files_data)
     except Exception as e:
