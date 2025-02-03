@@ -32,6 +32,7 @@ export function useEmbedIndex() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.indexDetails(indexId),
       });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexes });
     },
   });
 }
