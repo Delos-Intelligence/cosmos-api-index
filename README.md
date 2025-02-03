@@ -1,56 +1,56 @@
 # Cosmos API Index
 
-## Your Gateway to Intelligent Document Interaction
+## 🚀 Your Gateway to Intelligent Document Interaction
 
 A powerful web application that transforms how you create, manage, and converse with vectorized file indexes. Harnessing the capabilities of Next.js 15, FastAPI, and the cutting-edge Cosmos API, this tool brings your documents to life through intuitive chat interactions.
 
-## Purpose
+## 🎯 Purpose
 
 **Cosmos API Index** simplifies the creation and querying of vector databases for efficient document retrieval. Leveraging the Cosmos API, users can:
 
-- **Upload documents** into searchable indexes
-- **Interact with data** through a Natural Language interface
-- **Analyze files** in multiple languages
+- 📄 **Upload documents** into searchable indexes
+- 💬 **Interact with data** through a Natural Language interface
+- 🌐 **Analyze files** in multiple languages
 
 Ideal for researchers, content managers, and professionals working with large volumes of textual data who require swift and precise information retrieval.
 
-## Key Features
+## ✨ Key Features
 
-- Create, manage, and delete file indexes
-- Upload and remove files from indexes
-- Generate embeddings via Cosmos API
-- Interactive chat interface for querying indexed content
-- Sourced responses using RAG techniques
-- Modern, responsive UI with Tailwind CSS and shadcn/ui components
-- Real-time data fetching powered by TanStack Query
+- 📁 Create, manage, and delete file indexes
+- 🔄 Upload and remove files from indexes
+- 🧠 Generate embeddings via Cosmos API
+- 🤖 Interactive chat interface for querying indexed content
+- 📚 Sourced responses using RAG techniques
+- 💻 Modern, responsive UI with Tailwind CSS and shadcn/ui components
+- ⚡ Real-time data fetching powered by TanStack Query
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
 
-- Next.js 15 (App Router)
-- TailwindCSS
-- shadcn/ui components
-- TanStack Query
-- pnpm package manager
+- ⚛️ Next.js 15 (App Router)
+- 🎨 TailwindCSS
+- 🧩 shadcn/ui components
+- 🔍 TanStack Query
+- 📦 pnpm package manager
 
 ### Backend
 
-- FastAPI (Python)
-- Cosmos Client by Delos Intelligence
-- Poetry dependency management
+- 🐍 FastAPI (Python)
+- 🌌 Cosmos Client by Delos Intelligence
+- 📜 Poetry for dependency management
 
-## Getting Started
+## 🏁 Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- pnpm
-- Python 3.9+
-- Poetry
-- Cosmos API key (obtain from [platform.cosmos-suite.ai](https://platform.cosmos-suite.ai))
+- 🟢 Node.js (v18+)
+- 📦 pnpm
+- 🐍 Python 3.9+
+- 📜 Poetry
+- 🔑 Cosmos API key (obtain from [platform.cosmos-suite.ai](https://platform.cosmos-suite.ai))
 
-### Obtaining a Cosmos API Key
+### 🔑 Obtaining a Cosmos API Key
 
 Before you begin, you need to create a **Cosmos API key**:
 
@@ -58,9 +58,9 @@ Before you begin, you need to create a **Cosmos API key**:
 2. Sign up or log in to your account.
 3. Navigate to the Dashboard, and generate a new API key.
 
-   ![Create CosmosAPI key](https://i.ibb.co/b5sx86GB/Screenshot-from-2025-02-03-16-43-11.png)
+![Create CosmosAPI key](https://i.ibb.co/b5sx86GB/Screenshot-from-2025-02-03-16-43-11.png)
 
-### Installation
+### 🔧 Installation
 
 1. Clone the repository:
 
@@ -112,7 +112,7 @@ python -m index
 
 Runs on `http://localhost:8000` (unless modified in `backend/.env` and `frontend/.env`)
 
-## Usage
+## 📖 Usage Guide
 
 1. Access the web application (default: `http://localhost:3000`).
 
@@ -139,9 +139,9 @@ Runs on `http://localhost:8000` (unless modified in `backend/.env` and `frontend
 > - **Delete Index** is scheduled after a **2-hour countdown**.
 > - During the **countdown status**, it is possible to **restore Index**.
 
-## Index for File Management
+## 🔗 API Endpoints
 
-### Indexes
+### 📁 Indexes
 
 - `GET /files/index/list` - List all indexes
 - `POST /files/index/create` - Create a new index
@@ -149,18 +149,18 @@ Runs on `http://localhost:8000` (unless modified in `backend/.env` and `frontend
 - `DELETE /files/index/{index_id}/delete` - Delete an index (_warning: delayed operation_ - scheduled to be effective in 2h from current time)
 - `PUT /files/index/{index_id}/restore` - Restore an index scheduled for deletion
 
-### Files
+### 📄 Files
 
 - `GET /files/index/{index_id}/details` - See index details, such as files contained, storage, index status, embedded flag...
 - `POST /files/index/{index_id}/add_files` - Upload files to an index
 - `DELETE /files/index/{index_id}/delete_files` - Delete a file
 
-### Chat
+### 💬 Chat
 
 - `POST /files/index/{index_uuid}/ask` - Send a message to chat with Index
 - `POST /files/index/{index_uuid}/embed` - Embed the Index content in order to enable RAG operations
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -168,17 +168,19 @@ Runs on `http://localhost:8000` (unless modified in `backend/.env` and `frontend
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙌 Acknowledgments
 
 - [Cosmos API](https://platform.cosmos-suite.ai)
 - [Delos Intelligence](https://www.delosintelligence.fr/en)
-- [shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components
+- [FastAPI](https://fastapi.tiangolo.com) for building high-performance APIs
+- [shadcn/ui](https://ui.shadcn.com) for the beautiful UI components
 - [TanStack Query](https://tanstack.com/query/latest) for efficient data fetching
 
-## Support
+## 🆘 Support
 
-If you encounter any issues or have questions, please file an issue on the GitHub repository.
+If you encounter any issues or have questions, please file an issue on the GitHub repository, or contact
+[contact@delosintelligence.fr](mailto:contact@delosintelligence.fr)
