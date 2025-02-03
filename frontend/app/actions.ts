@@ -80,9 +80,12 @@ export async function createIndex(
 
 export async function deleteIndex(indexId: string): Promise<ApiResponse<void>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/files/index/${indexId}/delete`, {
-      method: "DELETE",
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/files/index/${indexId}/delete`,
+      {
+        method: "DELETE",
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Failed to delete index");
@@ -124,12 +127,9 @@ export async function addFilesToIndex(
   try {
     console.log(files, "files action");
 
-    // Create FormData and append files
     const formData = new FormData();
     files.forEach((file) => {
-      // You'll need the actual File object here, not just metadata
       if (file.fileObject) {
-        // Assuming you have the actual file object stored
         formData.append("filesobjects", file.fileObject);
       }
     });
@@ -138,7 +138,6 @@ export async function addFilesToIndex(
       `${API_BASE_URL}/files/index/${indexId}/add_files`,
       {
         method: "POST",
-        // Remove Content-Type header - browser will set it automatically with boundary
         body: formData,
       }
     );
