@@ -45,7 +45,7 @@ export async function getIndexDetails(
 ): Promise<ApiResponse<IndexDetailsResponse>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/files/index/details/${indexId}`
+      `${API_BASE_URL}/files/index/${indexId}/details`
     );
 
     if (!response.ok) throw new Error("Failed to fetch index details");
@@ -80,7 +80,7 @@ export async function createIndex(
 
 export async function deleteIndex(indexId: string): Promise<ApiResponse<void>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/files/index/${indexId}`, {
+    const response = await fetch(`${API_BASE_URL}/files/index/${indexId}/delete`, {
       method: "DELETE",
     });
 
@@ -100,7 +100,7 @@ export async function embedIndex(
 ): Promise<ApiResponse<{ vectorized: boolean }>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/files/index/embed/${indexId}`,
+      `${API_BASE_URL}/files/index/${indexId}/embed`,
       {
         method: "POST",
       }
@@ -135,7 +135,7 @@ export async function addFilesToIndex(
     });
 
     const response = await fetch(
-      `${API_BASE_URL}/files/index/add_files?index_uuid=${indexId}`,
+      `${API_BASE_URL}/files/index/${indexId}/add_files`,
       {
         method: "POST",
         // Remove Content-Type header - browser will set it automatically with boundary
@@ -164,7 +164,7 @@ export async function deleteFilesFromIndex(
 > {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/files/index/delete_files?index_uuid=${indexId}`,
+      `${API_BASE_URL}/files/index/${indexId}/delete_files`,
       {
         method: "DELETE",
         headers: {
@@ -191,7 +191,7 @@ export async function renameIndex(
   newName: string
 ): Promise<ApiResponse<BackendIndex>> {
   try {
-    const url = new URL(`${API_BASE_URL}/files/index/rename`);
+    const url = new URL(`${API_BASE_URL}/files/index/${indexId}/rename`);
     url.searchParams.append("index_uuid", indexId);
     url.searchParams.append("name", newName);
 
@@ -222,7 +222,7 @@ export async function askQuestion(params: {
   }>
 > {
   try {
-    const url = new URL(`${API_BASE_URL}/files/index/ask`);
+    const url = new URL(`${API_BASE_URL}/files/index/${params.indexId}/ask`);
     url.searchParams.append("index_uuid", params.indexId);
     url.searchParams.append("question", params.question);
     url.searchParams.append("output_language", params.outputLanguage || "en");

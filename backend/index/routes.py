@@ -39,10 +39,13 @@ def get_client() -> CosmosClient:
 
 @router.get("/files/index/list")
 async def list_indexes(client: CosmosClient = Depends(get_client)) -> dict[str, Any] | None:
-    return client.files_index_list_request()
+    try:
+        return client.files_index_list_request()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/files/index/details/{index_uuid}")
+@router.get("/files/index/{index_uuid}/details")
 async def index_details(index_uuid: str, client: CosmosClient = Depends(get_client)) -> dict[str, Any] | None:
     try:
         print(f"Received parameters: index_uuid={index_uuid}")
@@ -66,7 +69,6 @@ async def create_index(
             files_data.append(("files", (file.filename, io.BytesIO(content))))
 
         new_index = client.files_index_create_request(name=name, filesobjects=files_data)
-
         return new_index
 
     except Exception as e:
@@ -74,7 +76,7 @@ async def create_index(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/files/index/ask")
+@router.post("/files/index/{index_uuid}/ask")
 async def ask_index(
     index_uuid: str,
     question: str,
@@ -96,7 +98,7 @@ async def ask_index(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/files/index/embed/{index_uuid}")
+@router.post("/files/index/{index_uuid}/embed")
 async def embed_index(index_uuid: str, client: CosmosClient = Depends(get_client)) -> dict[str, Any] | None:
     try:
         print(f"Received parameters: index_uuid={index_uuid}")
@@ -105,7 +107,7 @@ async def embed_index(index_uuid: str, client: CosmosClient = Depends(get_client
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/files/index/add_files")
+@router.post("/files/index/{index_uuid}/add_files")
 async def add_files_to_index(
     index_uuid: str, filesobjects: list[UploadFile] = Form(...), client: CosmosClient = Depends(get_client)
 ) -> dict[str, Any] | None:
@@ -123,7 +125,8 @@ async def add_files_to_index(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete("/files/index/delete_files")
+
+@router.delete("/files/index/{index_uuid}/delete_files")
 async def delete_files_from_index(
     index_uuid: str, files_hashes: list[str], client: CosmosClient = Depends(get_client)
 ) -> dict[str, Any] | None:
@@ -137,7 +140,7 @@ async def delete_files_from_index(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/files/index/{index_uuid}")
+@router.delete("/files/index/{index_uuid}/delete")
 async def delete_index(index_uuid: str, client: CosmosClient = Depends(get_client)):
     try:
         print(f"Received parameters: index_uuid={index_uuid}")
@@ -146,7 +149,7 @@ async def delete_index(index_uuid: str, client: CosmosClient = Depends(get_clien
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/files/index/restore/{index_uuid}")
+@router.put("/files/index/{index_uuid}/restore")
 async def restore_index(index_uuid: str, client: CosmosClient = Depends(get_client)):
     try:
         print(f"Received parameters: index_uuid={index_uuid}")
@@ -155,7 +158,7 @@ async def restore_index(index_uuid: str, client: CosmosClient = Depends(get_clie
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/files/index/rename")
+@router.put("/files/index/{index_uuid}/rename")
 async def rename_index(index_uuid: str, name: str, client: CosmosClient = Depends(get_client)):
     try:
         print(f"Received parameters: index_uuid={index_uuid}, name={name}")
