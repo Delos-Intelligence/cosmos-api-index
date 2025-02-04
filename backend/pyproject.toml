@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "apicosmos"
+name = "cosmos-api-index"
 version = "0.1.0"
-description = "Cosmos - Index app"
+description = "Cosmos API - Index app"
 authors = ["Maria Ibanez <mariaibanez@delosintelligence.fr>"]
 readme = "README.md"
 package-mode = false
