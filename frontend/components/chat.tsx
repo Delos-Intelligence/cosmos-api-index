@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Message } from "@/types/types";
 import { useAskQuestion } from "@/hooks/use-queries";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ChatProps {
   indexId: string;
@@ -38,18 +40,27 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
         activeFilesHashes: activeFiles,
       });
 
+      if (response.status === "error") {
+        const errorContent: Message = {
+          content: "Index not vectorized",
+          role: "error",
+        };
+        setMessages((prev) => [...prev, errorContent]);
+        return;
+      }
+
       const answerMessage: Message = {
         content: response.data.answer,
         role: "assistant",
       };
       setMessages((prev) => [...prev, answerMessage]);
     } catch (error) {
-      console.error(error);
-      const errorMessage: Message = {
-        content: "Failed to get answer. Please try again.",
-        role: "assistant",
+      console.error("Error asking question:", error);
+      const errorContent: Message = {
+        content: "Something went wrong. Please try again.",
+        role: "error",
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorContent]);
     }
   };
 
@@ -61,19 +72,27 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
       <CardContent className="h-[300px] overflow-y-auto">
         <div className="space-y-4">
           {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg ${
-                message.role === "user"
-                  ? "bg-blue-50 ml-auto w-3/4"
-                  : "bg-gray-100 w-3/4"
-              }`}
-            >
-              {message.content}
+            <div key={index}>
+              {message.role === "error" ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{message.content}</AlertDescription>
+                </Alert>
+              ) : (
+                <div
+                  className={`p-3 rounded-lg ${
+                    message.role === "user"
+                      ? "bg-blue-50 ml-auto w-3/4"
+                      : "bg-gray-100 w-3/4"
+                  }`}
+                >
+                  {message.content}
+                </div>
+              )}
             </div>
           ))}
           {askQuestionMutation.isPending && (
-            <div className="flex justify-center  p-3">
+            <div className="flex justify-center p-3">
               <div className="text-gray-500">Thinking...</div>
             </div>
           )}

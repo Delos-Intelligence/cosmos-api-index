@@ -32,6 +32,7 @@ export default function Main() {
   const [createIndexOpen, setCreateIndexOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
 
   const { data: indexesData } = useIndexes();
   const { data: selectedIndexData, isPending: isIndexDetailsLoading } =
@@ -45,7 +46,12 @@ export default function Main() {
   const renameIndexMutation = useRenameIndex();
 
   const handleRename = async (indexId: string, newName: string) => {
-    await renameIndexMutation.mutateAsync({ indexId, newName });
+    try {
+      await renameIndexMutation.mutateAsync({ indexId, newName });
+      setRenameDialogOpen(false);
+    } catch (error) {
+      console.error("Error renaming index:", error);
+    }
   };
 
   const handleDelete = async () => {
@@ -191,7 +197,10 @@ export default function Main() {
                       <h1 className="text-2xl font-bold">
                         {selectedIndex?.name}
                       </h1>
-                      <Dialog>
+                      <Dialog
+                        open={renameDialogOpen}
+                        onOpenChange={setRenameDialogOpen}
+                      >
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="sm">
                             <PencilIcon className="h-5 w-5" />

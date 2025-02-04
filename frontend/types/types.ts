@@ -37,6 +37,6 @@ export interface ApiResponse<T> {
   };
 }
 export interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "error";
   content: string;
 }

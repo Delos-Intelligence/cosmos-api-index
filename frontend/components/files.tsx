@@ -1,4 +1,6 @@
 "use client";
+
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -9,9 +11,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useAddFiles, useDeleteFiles } from "@/hooks/use-queries";
 import { FileItem } from "@/types/types";
+import { Loader2, X } from "lucide-react";
 
 interface FilesProps {
   indexId: string;
@@ -26,14 +30,17 @@ export default function Files({
   activeFiles,
   onActiveFilesChange,
 }: FilesProps) {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const addFilesMutation = useAddFiles();
   const deleteFilesMutation = useDeleteFiles();
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
+    setSelectedFiles(Array.from(e.target.files));
+  };
 
-    const selectedFiles = Array.from(e.target.files);
-
+  const handleUploadConfirm = async () => {
     try {
       await addFilesMutation.mutateAsync({
         indexId,
@@ -41,12 +48,18 @@ export default function Files({
           filename: file.name,
           file_hash: file.name,
           size: file.size,
-          fileObject: file, // Add this line to include the actual File object
+          fileObject: file,
         })),
       });
+      setSelectedFiles([]);
+      setIsDialogOpen(false);
     } catch (error) {
       console.error("Error uploading files:", error);
     }
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleToggleFile = (fileHash: string, checked: boolean) => {
@@ -62,20 +75,77 @@ export default function Files({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Files</CardTitle>
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">Add Files</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Upload Files</DialogTitle>
               </DialogHeader>
-              <Input
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                className="cursor-pointer"
-              />
+              <div className="space-y-4">
+                <Input
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="cursor-pointer"
+                />
+                {selectedFiles.length > 0 && (
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSelectedFile(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedFiles([]);
+                    setIsDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUploadConfirm}
+                  disabled={
+                    selectedFiles.length === 0 || addFilesMutation.isPending
+                  }
+                >
+                  {addFilesMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      Upload{" "}
+                      {selectedFiles.length > 0
+                        ? `(${selectedFiles.length})`
+                        : ""}
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -86,7 +156,7 @@ export default function Files({
             {files.map((file) => (
               <div
                 key={file.file_hash}
-                className="flex items-center justify-between p-2 hover:bg-gray-50"
+                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
               >
                 <div className="flex items-center space-x-2">
                   <input
@@ -110,8 +180,13 @@ export default function Files({
                       fileHashes: [file.file_hash],
                     })
                   }
+                  disabled={deleteFilesMutation.isPending}
                 >
-                  Delete
+                  {deleteFilesMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Delete"
+                  )}
                 </Button>
               </div>
             ))}

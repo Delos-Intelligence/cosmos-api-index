@@ -27,16 +27,18 @@ export default function CreateIndex({
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const fileInput = formData.get("files") as File;
+    const files = formData.getAll("files") as File[];
 
-    if (!name || !fileInput) {
-      console.error("Name and file are required");
+    if (!name || files.length === 0) {
+      console.error("Name and at least one file are required");
       return;
     }
 
     const submitData = new FormData();
     submitData.append("name", name);
-    submitData.append("filesobjects", fileInput);
+    files.forEach((file) => {
+      submitData.append("filesobjects", file);
+    });
 
     try {
       await createIndexMutation.mutateAsync(submitData);
