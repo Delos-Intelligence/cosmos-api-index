@@ -26,6 +26,7 @@ export interface BackendIndex {
   vectorized: boolean;
   created_at: string;
   updated_at: string;
+  status: string;
 }
 
 export interface ApiResponse<T> {

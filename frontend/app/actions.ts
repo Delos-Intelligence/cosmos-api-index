@@ -209,6 +209,30 @@ export async function renameIndex(
   }
 }
 
+export async function restoreIndex(indexUuid: string) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/files/index/${indexUuid}/restore`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${process.env.API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to restore index");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in restoreIndex:", error);
+    throw error;
+  }
+}
+
 export async function askQuestion(params: {
   indexId: string;
   question: string;

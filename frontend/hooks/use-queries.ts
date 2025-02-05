@@ -9,16 +9,20 @@ import {
   getIndexDetails,
   listIndexes,
   renameIndex,
+  restoreIndex,
 } from "@/app/actions";
 import { ApiResponse, BackendIndex, FileItem } from "@/types/types";
 
-export function useDeleteIndex() {
+export function useDeleteIndex(indexId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (indexId: string) => deleteIndex(indexId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexes });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.indexDetails(indexId),
+      });
     },
   });
 }
@@ -136,6 +140,21 @@ export function useAddFiles() {
     mutationFn: ({ indexId, files }: { indexId: string; files: FileItem[] }) =>
       addFilesToIndex(indexId, files),
     onSuccess: (_, { indexId }) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.indexDetails(indexId),
+      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexes });
+    },
+  });
+}
+
+export function useRestoreIndex(indexId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (indexId: string) => restoreIndex(indexId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexes });
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.indexDetails(indexId),
       });
