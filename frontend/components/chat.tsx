@@ -42,7 +42,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
 
       if (response.status === "error") {
         const errorContent: Message = {
-          content: "Index not vectorized",
+          content: "Index not vectorized. Embed the index to ask questions.",
           role: "error",
         };
         setMessages((prev) => [...prev, errorContent]);

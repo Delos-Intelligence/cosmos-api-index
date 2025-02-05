@@ -255,7 +255,7 @@ export default function Main() {
                               Embedding...
                             </>
                           ) : (
-                            "Embed Now"
+                            "Embed Index"
                           )}
                         </Button>
                       )}
@@ -283,7 +283,7 @@ export default function Main() {
                           Embedding...
                         </>
                       ) : (
-                        "Embed Now"
+                        "Embed Index"
                       )}
                     </Button>
                   )}
