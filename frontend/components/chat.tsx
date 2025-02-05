@@ -31,6 +31,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
   useEffect(() => {
     const isCurrentlyVectorized = indexDetails?.data?.vectorized ?? false;
 
+    // Check if vectorization status changed from false to true
     if (previousVectorizedState === false && isCurrentlyVectorized) {
       const systemMessage: Message = {
         content:
