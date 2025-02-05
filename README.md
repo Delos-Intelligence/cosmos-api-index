@@ -87,7 +87,7 @@ poetry install
    Create a `.env` file in the root directory (refer to `.env.example`) and paste the key you created in [platform.cosmos-suite.ai](https://platform.cosmos-suite.ai):
 
 ```env
-COSMOS_APIKEY=your_api_key_here
+COSMOS_APIKEY=your_apikey_here
 ```
 
 > **Note**: _By default, the backend will serve the port 8000, and the frontend the 3000. You can customize those in their respective `.env`._
