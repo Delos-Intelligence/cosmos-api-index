@@ -36,7 +36,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
       const systemMessage: Message = {
         content:
           "Index embedded successfully. You can now ask questions about your documents.",
-        role: "assistant",
+        role: "system",
       };
       setMessages((prev) => [...prev, systemMessage]);
     }
@@ -97,7 +97,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{message.content}</AlertDescription>
                 </Alert>
-              ) : message.role === "assistant" ? (
+              ) : message.role === "system" ? (
                 <Alert
                   variant="default"
                   className="bg-green-50 border-green-200"
