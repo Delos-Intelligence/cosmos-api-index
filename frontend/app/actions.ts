@@ -245,21 +245,19 @@ export async function askQuestion(params: {
   }>
 > {
   try {
+    console.log(params.activeFilesHashes, "activeFilesHashes");
+
     const url = new URL(`${API_BASE_URL}/files/index/${params.indexId}/ask`);
     url.searchParams.append("index_uuid", params.indexId);
     url.searchParams.append("question", params.question);
     url.searchParams.append("output_language", params.outputLanguage || "en");
-    url.searchParams.append(
-      "active_files_hashes",
-      JSON.stringify(params.activeFilesHashes || [])
-    );
 
     const response = await fetch(url.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify([]),
+      body: JSON.stringify(params.activeFilesHashes || []),
     });
 
     if (!response.ok) {
