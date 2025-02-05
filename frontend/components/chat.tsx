@@ -1,5 +1,4 @@
-"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,8 +9,8 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Message } from "@/types/types";
-import { useAskQuestion } from "@/hooks/use-queries";
-import { AlertCircle } from "lucide-react";
+import { useAskQuestion, useIndexDetails } from "@/hooks/use-queries";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ChatProps {
@@ -22,8 +21,27 @@ interface ChatProps {
 export default function Chat({ indexId, activeFiles }: ChatProps) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [previousVectorizedState, setPreviousVectorizedState] = useState<
+    boolean | null
+  >(null);
 
   const askQuestionMutation = useAskQuestion();
+  const { data: indexDetails } = useIndexDetails(indexId);
+
+  useEffect(() => {
+    const isCurrentlyVectorized = indexDetails?.data?.vectorized ?? false;
+
+    if (previousVectorizedState === false && isCurrentlyVectorized) {
+      const systemMessage: Message = {
+        content:
+          "Index embedded successfully. You can now ask questions about your documents.",
+        role: "assistant",
+      };
+      setMessages((prev) => [...prev, systemMessage]);
+    }
+
+    setPreviousVectorizedState(isCurrentlyVectorized);
+  }, [indexDetails?.data?.vectorized, previousVectorizedState]);
 
   const handleAskQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +95,16 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{message.content}</AlertDescription>
+                </Alert>
+              ) : message.role === "system" ? (
+                <Alert
+                  variant="default"
+                  className="bg-green-50 border-green-200"
+                >
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <AlertDescription className="text-green-700">
+                    {message.content}
+                  </AlertDescription>
                 </Alert>
               ) : (
                 <div
