@@ -38,6 +38,6 @@ export interface ApiResponse<T> {
   };
 }
 export interface Message {
-  role: "user" | "assistant" | "error";
+  role: "user" | "assistant" | "error" | "system";
   content: string;
 }
