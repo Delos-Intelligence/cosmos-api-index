@@ -96,7 +96,7 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{message.content}</AlertDescription>
                 </Alert>
-              ) : message.role === "system" ? (
+              ) : message.role === "assistant" ? (
                 <Alert
                   variant="default"
                   className="bg-green-50 border-green-200"
