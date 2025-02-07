@@ -1,86 +1,86 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Message } from "@/types/types";
-import { useAskQuestion, useIndexDetails } from "@/hooks/use-queries";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { useAskQuestion, useIndexDetails } from '@/hooks/use-queries'
+import { Message } from '@/types/types'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface ChatProps {
-  indexId: string;
-  activeFiles: string[];
+  indexId: string
+  activeFiles: string[]
 }
 
 export default function Chat({ indexId, activeFiles }: ChatProps) {
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [previousVectorizedState, setPreviousVectorizedState] = useState<
-    boolean | null
-  >(null);
+  const [question, setQuestion] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [previousVectorizedState, setPreviousVectorizedState] = useState<boolean | null>(null)
 
-  const askQuestionMutation = useAskQuestion();
-  const { data: indexDetails } = useIndexDetails(indexId);
+  const askQuestionMutation = useAskQuestion()
+  const { data: indexDetails } = useIndexDetails(indexId)
 
   useEffect(() => {
-    const isCurrentlyVectorized = indexDetails?.data?.vectorized ?? false;
+    const isCurrentlyVectorized = indexDetails?.data?.vectorized ?? false
 
     if (previousVectorizedState === false && isCurrentlyVectorized) {
       const systemMessage: Message = {
-        content:
-          "Index embedded successfully. You can now ask questions about your documents.",
-        role: "system",
-      };
-      setMessages((prev) => [...prev, systemMessage]);
+        content: 'Index embedded successfully. You can now ask questions about your documents.',
+        role: 'system',
+      }
+      setMessages((prev) => [...prev, systemMessage])
     }
 
-    setPreviousVectorizedState(isCurrentlyVectorized);
-  }, [indexDetails?.data?.vectorized, previousVectorizedState]);
+    setPreviousVectorizedState(isCurrentlyVectorized)
+  }, [indexDetails?.data?.vectorized, previousVectorizedState])
 
   const handleAskQuestion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!indexId || !question) return;
+    e.preventDefault()
+    if (!indexId || !question) return
 
-    setQuestion("");
-    const newMessage: Message = { content: question, role: "user" };
-    setMessages((prev) => [...prev, newMessage]);
+    if (activeFiles.length === 0) {
+      const errorMessage: Message = {
+        content: 'Please select at least one file before asking a question.',
+        role: 'error',
+      }
+      setMessages((prev) => [...prev, errorMessage])
+      return
+    }
+
+    setQuestion('')
+    const newMessage: Message = { content: question, role: 'user' }
+    setMessages((prev) => [...prev, newMessage])
 
     try {
       const response = await askQuestionMutation.mutateAsync({
         indexId,
         question,
         activeFilesHashes: activeFiles,
-      });
+      })
 
-      if (response.status === "error") {
+      if (response.status === 'error') {
         const errorContent: Message = {
-          content: "Index not vectorized. Embed the index to ask questions.",
-          role: "error",
-        };
-        setMessages((prev) => [...prev, errorContent]);
-        return;
+          content: 'Index not vectorized. Embed the index to ask questions.',
+          role: 'error',
+        }
+        setMessages((prev) => [...prev, errorContent])
+        return
       }
 
       const answerMessage: Message = {
         content: response.data.answer,
-        role: "assistant",
-      };
-      setMessages((prev) => [...prev, answerMessage]);
+        role: 'assistant',
+      }
+      setMessages((prev) => [...prev, answerMessage])
     } catch (error) {
-      console.error("Error asking question:", error);
+      console.error('Error asking question:', error)
       const errorContent: Message = {
-        content: "Something went wrong. Please try again.",
-        role: "error",
-      };
-      setMessages((prev) => [...prev, errorContent]);
+        content: 'Something went wrong. Please try again.',
+        role: 'error',
+      }
+      setMessages((prev) => [...prev, errorContent])
     }
-  };
+  }
 
   return (
     <Card className="h-[450px]">
@@ -91,27 +91,20 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
         <div className="space-y-4">
           {messages.map((message, index) => (
             <div key={index}>
-              {message.role === "error" ? (
+              {message.role === 'error' ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{message.content}</AlertDescription>
                 </Alert>
-              ) : message.role === "system" ? (
-                <Alert
-                  variant="default"
-                  className="bg-green-50 border-green-200"
-                >
+              ) : message.role === 'system' ? (
+                <Alert variant="default" className="bg-green-50 border-green-200">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <AlertDescription className="text-green-700">
-                    {message.content}
-                  </AlertDescription>
+                  <AlertDescription className="text-green-700">{message.content}</AlertDescription>
                 </Alert>
               ) : (
                 <div
                   className={`p-3 rounded-lg ${
-                    message.role === "user"
-                      ? "bg-blue-50 ml-auto w-3/4"
-                      : "bg-gray-100 w-3/4"
+                    message.role === 'user' ? 'bg-blue-50 ml-auto w-3/4' : 'bg-gray-100 w-3/4'
                   }`}
                 >
                   {message.content}
@@ -140,5 +133,5 @@ export default function Chat({ indexId, activeFiles }: ChatProps) {
         </form>
       </CardFooter>
     </Card>
-  );
+  )
 }

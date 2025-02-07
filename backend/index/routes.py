@@ -82,17 +82,20 @@ async def ask_index(
     index_uuid: str,
     question: str,
     output_language: str,
-    active_files_hashes: list[str],
+    active_files: list[str] | str = "all",
 ) -> dict[str, Any] | None:
     try:
         logger.debug(
-            f"Received parameters: index_uuid={index_uuid}, question={question}, output_language={output_language}, active_files_hashes={active_files_hashes}"
+            f"Received parameters: index_uuid={index_uuid}, question={question}, output_language={output_language}, "
+            f"active_files={active_files}"
         )
+
+        print(f"\n\nACTIVE FILES {active_files}\n\n")
         return client.files_index_ask_request(
             index_uuid=index_uuid,
             question=question,
             output_language=output_language,
-            active_files_hashes=active_files_hashes,
+            active_files=active_files,
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

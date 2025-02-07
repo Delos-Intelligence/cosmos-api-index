@@ -1,56 +1,44 @@
-import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  useAddFiles,
-  useDeleteFiles,
-  useRestoreIndex,
-} from "@/hooks/use-queries";
-import { FileItem } from "@/types/types";
-import { Loader2, X, TimerOff } from "lucide-react";
-
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { useAddFiles, useDeleteFiles, useRestoreIndex } from '@/hooks/use-queries'
+import { FileItem } from '@/types/types'
+import { Loader2, TimerOff, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 interface FilesProps {
-  indexId: string;
-  files: FileItem[];
-  activeFiles: string[];
-  onActiveFilesChange: (files: string[]) => void;
-  isCountdown?: boolean;
+  indexId: string
+  files: FileItem[]
+  activeFiles: string[]
+  onActiveFilesChange: (files: string[]) => void
+  isCountdown?: boolean
 }
 
-export default function Files({
-  indexId,
-  files,
-  activeFiles,
-  onActiveFilesChange,
-  isCountdown = false,
-}: FilesProps) {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const addFilesMutation = useAddFiles();
-  const deleteFilesMutation = useDeleteFiles();
-  const restoreIndexMutation = useRestoreIndex(indexId);
+export default function Files({ indexId, files, activeFiles, onActiveFilesChange, isCountdown = false }: FilesProps) {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const addFilesMutation = useAddFiles()
+  const deleteFilesMutation = useDeleteFiles()
+  const restoreIndexMutation = useRestoreIndex(indexId)
+
+  useEffect(() => {
+    // Set all files as active by default
+    const allFileHashes = files.map((file) => file.file_hash)
+    onActiveFilesChange(allFileHashes)
+  }, [files, onActiveFilesChange])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    setSelectedFiles(Array.from(e.target.files));
-  };
+    if (!e.target.files?.length) return
+    setSelectedFiles(Array.from(e.target.files))
+  }
 
   const removeSelectedFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
 
   const handleUploadConfirm = async () => {
-    if (isCountdown) return;
+    if (isCountdown) return
     try {
       await addFilesMutation.mutateAsync({
         indexId,
@@ -60,21 +48,17 @@ export default function Files({
           size: file.size,
           fileObject: file,
         })),
-      });
-      setSelectedFiles([]);
-      setIsDialogOpen(false);
+      })
+      setSelectedFiles([])
+      setIsDialogOpen(false)
     } catch (error) {
-      console.error("Error uploading files:", error);
+      console.error('Error uploading files:', error)
     }
-  };
+  }
 
   const handleToggleFile = (fileHash: string, checked: boolean) => {
-    onActiveFilesChange(
-      checked
-        ? [...activeFiles, fileHash]
-        : activeFiles.filter((h) => h !== fileHash)
-    );
-  };
+    onActiveFilesChange(checked ? [...activeFiles, fileHash] : activeFiles.filter((h) => h !== fileHash))
+  }
 
   return (
     <Card>
@@ -91,30 +75,16 @@ export default function Files({
                   <DialogTitle>Upload Files</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <Input
-                    type="file"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="cursor-pointer"
-                  />
+                  <Input type="file" multiple onChange={handleFileSelect} className="cursor-pointer" />
                   {selectedFiles.length > 0 && (
                     <div className="max-h-60 overflow-y-auto space-y-2">
                       {selectedFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                        >
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {(file.size / 1024).toFixed(2)} KB
-                            </p>
+                            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeSelectedFile(index)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => removeSelectedFile(index)}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -126,17 +96,15 @@ export default function Files({
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setSelectedFiles([]);
-                      setIsDialogOpen(false);
+                      setSelectedFiles([])
+                      setIsDialogOpen(false)
                     }}
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleUploadConfirm}
-                    disabled={
-                      selectedFiles.length === 0 || addFilesMutation.isPending
-                    }
+                    disabled={selectedFiles.length === 0 || addFilesMutation.isPending}
                   >
                     {addFilesMutation.isPending ? (
                       <>
@@ -144,7 +112,7 @@ export default function Files({
                         Uploading...
                       </>
                     ) : (
-                      `Upload ${selectedFiles.length ? `(${selectedFiles.length})` : ""}`
+                      `Upload ${selectedFiles.length ? `(${selectedFiles.length})` : ''}`
                     )}
                   </Button>
                 </DialogFooter>
@@ -174,7 +142,7 @@ export default function Files({
                     Restoring...
                   </>
                 ) : (
-                  "Restore Index"
+                  'Restore Index'
                 )}
               </Button>
             </AlertDescription>
@@ -184,23 +152,16 @@ export default function Files({
         {files?.length > 0 ? (
           <div className="space-y-2">
             {files.map((file) => (
-              <div
-                key={file.file_hash}
-                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
-              >
+              <div key={file.file_hash} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={activeFiles.includes(file.file_hash)}
-                    onChange={(e) =>
-                      handleToggleFile(file.file_hash, e.target.checked)
-                    }
+                    onChange={(e) => handleToggleFile(file.file_hash, e.target.checked)}
                     disabled={isCountdown}
                   />
                   <span>{file.filename}</span>
-                  <span className="text-sm text-gray-500">
-                    ({(file.size / 1024).toFixed(2)} KB)
-                  </span>
+                  <span className="text-sm text-gray-500">({(file.size / 1024).toFixed(2)} KB)</span>
                 </div>
                 {!isCountdown && (
                   <Button
@@ -214,11 +175,7 @@ export default function Files({
                     }
                     disabled={deleteFilesMutation.isPending}
                   >
-                    {deleteFilesMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Delete"
-                    )}
+                    {deleteFilesMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                   </Button>
                 )}
               </div>
@@ -226,12 +183,10 @@ export default function Files({
           </div>
         ) : (
           <Alert>
-            <AlertDescription>
-              No files in this index. Upload some files to get started.
-            </AlertDescription>
+            <AlertDescription>No files in this index. Upload some files to get started.</AlertDescription>
           </Alert>
         )}
       </CardContent>
     </Card>
-  );
+  )
 }
