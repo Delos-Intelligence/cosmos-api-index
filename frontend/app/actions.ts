@@ -101,8 +101,6 @@ export async function embedIndex(indexId: string): Promise<ApiResponse<{ vectori
 
 export async function addFilesToIndex(indexId: string, files: FileItem[]): Promise<ApiResponse<{ files: FileItem[] }>> {
   try {
-    console.log(files, 'files action')
-
     const formData = new FormData()
     files.forEach((file) => {
       if (file.fileObject) {
@@ -209,8 +207,6 @@ export async function askQuestion(params: {
   }>
 > {
   try {
-    console.log(params.activeFilesHashes, 'activeFilesHashes')
-
     if (!params.activeFilesHashes || params.activeFilesHashes.length === 0) {
       throw new Error('No files selected. Please select some files to proceed.')
     }

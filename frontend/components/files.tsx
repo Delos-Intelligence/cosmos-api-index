@@ -23,7 +23,6 @@ export default function Files({ indexId, files, activeFiles, onActiveFilesChange
   const restoreIndexMutation = useRestoreIndex(indexId)
 
   useEffect(() => {
-    // Set all files as active by default
     const allFileHashes = files.map((file) => file.file_hash)
     onActiveFilesChange(allFileHashes)
   }, [files, onActiveFilesChange])

@@ -89,8 +89,6 @@ async def ask_index(
             f"Received parameters: index_uuid={index_uuid}, question={question}, output_language={output_language}, "
             f"active_files={active_files}"
         )
-
-        print(f"\n\nACTIVE FILES {active_files}\n\n")
         return client.files_index_ask_request(
             index_uuid=index_uuid,
             question=question,
