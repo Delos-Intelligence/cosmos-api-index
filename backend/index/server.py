@@ -42,4 +42,5 @@ def start() -> None:
         "index.server:app",
         host="0.0.0.0",
         port=settings.BACKEND_PORT,
+        reload=True,
     )
