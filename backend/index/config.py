@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # API settings:
     API_SERVER: str = "https://platform.cosmos-suite.ai"
-    COSMOS_APIKEY: str = ""
+    COSMOS_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

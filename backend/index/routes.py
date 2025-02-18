@@ -13,12 +13,12 @@ router = APIRouter()
 
 def get_client() -> CosmosClient:
     try:
-        if not hasattr(settings, "COSMOS_APIKEY") or not settings.COSMOS_APIKEY:
-            raise SettingsError("COSMOS_APIKEY is missing or empty.")
-        logger.debug(f"Initializing client: key is `{settings.COSMOS_APIKEY}`, server is `{settings.API_SERVER}`")
+        if not hasattr(settings, "COSMOS_API_KEY") or not settings.COSMOS_API_KEY:
+            raise SettingsError("COSMOS_API_KEY is missing or empty.")
+        logger.debug(f"Initializing client: key is `{settings.COSMOS_API_KEY}`, server is `{settings.API_SERVER}`")
 
-        client = CosmosClient(settings.COSMOS_APIKEY, server_url=settings.API_SERVER)
-        logger.debug(f"Test API health status: {client.status_health_request()}")
+        client = CosmosClient(settings.COSMOS_API_KEY, server_url=settings.API_SERVER)
+        logger.debug(f"Test API health status: {client.status_health()}")
 
         if not client:
             raise ClientInitializationError("Failed to initialize the client.")
@@ -40,10 +40,18 @@ def get_client() -> CosmosClient:
 client = get_client()
 
 
+@router.get("/test")
+async def test() -> dict[str, Any] | None:
+    try:
+        return client.llm_chat(text="Hello, world!", model="gpt-4o", response_format='{"type":"json_format"}')
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/files/index/list")
 async def list_indexes() -> dict[str, Any] | None:
     try:
-        return client.files_index_list_request()
+        return client.files_index_list()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -52,7 +60,7 @@ async def list_indexes() -> dict[str, Any] | None:
 async def index_details(index_uuid: str) -> dict[str, Any] | None:
     try:
         logger.debug(f"Received parameters: index_uuid={index_uuid}")
-        return client.files_index_details_request(index_uuid=index_uuid)
+        return client.files_index_details(index_uuid=index_uuid)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -69,7 +77,7 @@ async def create_index(name: str = Form(...), filesobjects: list[UploadFile] = F
             content = await file.read()
             files_data.append(("files", (file.filename or "", BytesIO(content))))
 
-        new_index = client.files_index_create_request(name=name, filesobjects=files_data)
+        new_index = client.files_index_create(name=name, filesobjects=files_data)
         return new_index
 
     except Exception as e:
@@ -89,7 +97,7 @@ async def ask_index(
             f"Received parameters: index_uuid={index_uuid}, question={question}, output_language={output_language}, "
             f"active_files={active_files}"
         )
-        return client.files_index_ask_request(
+        return client.files_index_ask(
             index_uuid=index_uuid,
             question=question,
             output_language=output_language,
@@ -103,7 +111,7 @@ async def ask_index(
 async def embed_index(index_uuid: str) -> dict[str, Any] | None:
     try:
         logger.debug(f"Received parameters: index_uuid={index_uuid}")
-        return client.files_index_embed_request(index_uuid=index_uuid)
+        return client.files_index_embed(index_uuid=index_uuid)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -120,7 +128,7 @@ async def add_files_to_index(index_uuid: str, filesobjects: list[UploadFile] = F
             content = await file.read()
             files_data.append(("files", (file.filename or "", BytesIO(content))))
 
-        return client.files_index_add_files_request(index_uuid=index_uuid, filesobjects=files_data)
+        return client.files_index_files_add(index_uuid=index_uuid, filesobjects=files_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -130,7 +138,7 @@ async def delete_files_from_index(index_uuid: str, files_hashes: list[str]) -> d
     logger.debug(f"Received parameters: index_uuid={index_uuid}, files_hashes={files_hashes} type {type(files_hashes)}")
     try:
         logger.debug(f"Received parameters: index_uuid={index_uuid}, files_hashes={files_hashes}")
-        response = client.files_index_delete_files_request(index_uuid=index_uuid, files_hashes=files_hashes)
+        response = client.files_index_files_delete(index_uuid=index_uuid, files_hashes=files_hashes)
         logger.debug(f"Response: {response}")
         return response
     except Exception as e:
@@ -141,7 +149,7 @@ async def delete_files_from_index(index_uuid: str, files_hashes: list[str]) -> d
 async def delete_index(index_uuid: str):
     try:
         logger.debug(f"Received parameters: index_uuid={index_uuid}")
-        return client.files_index_delete_request(index_uuid=index_uuid)
+        return client.files_index_delete(index_uuid=index_uuid)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -150,7 +158,7 @@ async def delete_index(index_uuid: str):
 async def restore_index(index_uuid: str):
     try:
         logger.debug(f"Received parameters: index_uuid={index_uuid}")
-        return client.files_index_restore_request(index_uuid=index_uuid)
+        return client.files_index_restore(index_uuid=index_uuid)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -159,6 +167,6 @@ async def restore_index(index_uuid: str):
 async def rename_index(index_uuid: str, name: str):
     try:
         logger.debug(f"Received parameters: index_uuid={index_uuid}, name={name}")
-        return client.files_index_rename_request(index_uuid=index_uuid, name=name)
+        return client.files_index_rename(index_uuid=index_uuid, name=name)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
