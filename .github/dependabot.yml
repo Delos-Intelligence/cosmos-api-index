@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "pip" 
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "Poetry: "
+    open-pull-requests-limit: 20
+    rebase-strategy: "auto"
+    target-branch: "main"
