@@ -1,0 +1,13 @@
+name: Always Pass
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-checks:
+    name: code-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: noop
+        run: echo "✅ code-checks init passes" && exit 0
